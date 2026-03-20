@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AFAS nacalculatie weekoverzicht</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      color: #1f2937;
+    }
+
+    .page {
+      display: flex;
+      gap: 16px;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .panel-left {
+      flex: 1;
+      min-width: 520px;
+    }
+
+    .panel-right {
+      flex: 1.35;
+      min-width: 760px;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .field input,
+    .field select {
+      min-width: 150px;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+    }
+
+    .checkbox-field input {
+      width: 16px;
+      height: 16px;
+      min-width: auto;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .status {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.info {
+      display: block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .status.error {
+      display: block;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      position: relative;
+      min-height: 180px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    thead {
+      background: #f3f4f6;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    tbody tr.selected {
+      background: #dbeafe;
+    }
+
+    .meta {
+      margin-bottom: 10px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .empty {
+      padding: 16px;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .text-danger {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .spinner-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: 2;
+    }
+
+    .spinner-overlay.visible {
+      display: flex;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid #dbeafe;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1250px) {
+      .page {
+        flex-direction: column;
+      }
+
+      .panel-left,
+      .panel-right {
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="panel panel-left">
+      <h1>Nacalculatie weekoverzicht</h1>
+
+      <div class="toolbar">
+        <div class="field">
+          <label for="token">Token</label>
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" />
+        </div>
+
+        <div class="field">
+          <label for="weeknummer">Weeknummer</label>
+          <input id="weeknummer" type="number" min="1" max="53" value="6" />
+        </div>
+
+        <div class="field">
+          <label for="boekjaar">Boekjaar</label>
+          <input id="boekjaar" type="number" min="2000" max="2100" value="2026" />
+        </div>
+
+        <label class="checkbox-field" for="alleenAfwijkingen">
+          <input id="alleenAfwijkingen" type="checkbox" />
+          Alleen afwijkingen
+        </label>
+
+        <button id="btnLaden" type="button">Overzicht laden</button>
+      </div>
+
+      <div id="statusLeft" class="status"></div>
+
+      <div class="table-wrap">
+        <div id="spinnerLeft" class="spinner-overlay">
+          <div class="spinner"></div>
+        </div>
+        <table id="overviewTable">
+          <thead>
+            <tr>
+              <th>Weeknummer</th>
+              <th>Boekjaar</th>
+              <th>Naam</th>
+              <th>Aantal</th>
+              <th>Uren per week</th>
+              <th>Verschil</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="small">
+        Klik op een regel om rechts de detailregels op te halen.
+      </div>
+    </div>
+
+    <div class="panel panel-right">
+      <h2>Detailregels</h2>
+      <div id="detailMeta" class="meta">Nog geen medewerker geselecteerd.</div>
+      <div id="statusRight" class="status"></div>
+
+      <div class="table-wrap">
+        <div id="spinnerRight" class="spinner-overlay">
+          <div class="spinner"></div>
+        </div>
+        <table id="detailTable">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Weeknummer</th>
+              <th>Boekjaar</th>
+              <th>Itemcode</th>
+              <th>Type item</th>
+              <th>Project</th>
+              <th>Omschrijving</th>
+              <th>Aantal</th>
+              <th>Urensoort</th>
+              <th>Omschrijving 2</th>
+              <th>Naam</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="11" class="empty">Selecteer links eerst een medewerkerregel.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AFAS_BASE_URL = 'https://87488.rest.afas.online/ProfitRestServices/connectors';
+    const CONNECTOR_OVERVIEW = 'Insite_nacalculatie_week_overzicht';
+    const CONNECTOR_DETAILS = 'Insite_nacalculatieregels';
+
+    const overviewTableBody = document.querySelector('#overviewTable tbody');
+    const detailTableBody = document.querySelector('#detailTable tbody');
+    const detailMeta = document.getElementById('detailMeta');
+    const statusLeft = document.getElementById('statusLeft');
+    const statusRight = document.getElementById('statusRight');
+    const btnLaden = document.getElementById('btnLaden');
+    const spinnerLeft = document.getElementById('spinnerLeft');
+    const spinnerRight = document.getElementById('spinnerRight');
+    const alleenAfwijkingenCheckbox = document.getElementById('alleenAfwijkingen');
+
+    let selectedRowKey = null;
+    let overviewRows = [];
+
+    function setStatus(element, message = '', type = 'info') {
+      element.className = 'status';
+      element.textContent = message;
+
+      if (message) {
+        element.classList.add(type);
+      }
+    }
+
+    function setLoading(spinnerElement, isLoading) {
+      spinnerElement.classList.toggle('visible', isLoading);
+    }
+
+    function getHeaders() {
+      const token = document.getElementById('token').value.trim();
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers['Authorization'] = 'AfasToken ' + token;
+      }
+
+      return headers;
+    }
+
+    function buildUrl(connectorName, params = {}) {
+      const url = new URL(AFAS_BASE_URL + '/' + connectorName);
+
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          url.searchParams.append(key, value);
+        }
+      });
+
+      return url.toString();
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error('HTTP ' + response.status + ' - ' + text);
+      }
+
+      return response.json();
+    }
+
+    function clearOverview() {
+      overviewTableBody.innerHTML = '';
+    }
+
+    function clearDetails(message = 'Selecteer links eerst een medewerkerregel.') {
+      detailTableBody.innerHTML = `
+        <tr>
+          <td colspan="11" class="empty">${message}</td>
+        </tr>
+      `;
+      detailMeta.textContent = 'Nog geen medewerker geselecteerd.';
+    }
+
+    function formatNumber(value) {
+      if (value === null || value === undefined || value === '') return '';
+      return new Intl.NumberFormat('nl-NL', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat('nl-NL').format(date);
+    }
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getWeekInfo(date = new Date()) {
+      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = utcDate.getUTCDay() || 7;
+      utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+      return {
+        week: weekNo,
+        year: utcDate.getUTCFullYear()
+      };
+    }
+
+    function getVerschilInfo(row) {
+      const urenPerWeek = row.Urenperweek;
+      const heeftUrenPerWeek = urenPerWeek !== null && urenPerWeek !== undefined && urenPerWeek !== '';
+      const verschil = heeftUrenPerWeek ? Number(row.Aantal || 0) - Number(urenPerWeek || 0) : null;
+      const isAfwijking = heeftUrenPerWeek && verschil !== 0;
+      return {
+        urenPerWeek,
+        heeftUrenPerWeek,
+        verschil,
+        isAfwijking
+      };
+    }
+
+    function getFilteredOverviewRows() {
+      if (!alleenAfwijkingenCheckbox.checked) {
+        return overviewRows;
+      }
+
+      return overviewRows.filter(row => getVerschilInfo(row).isAfwijking);
+    }
+
+    function renderOverview() {
+      clearOverview();
+      const rows = getFilteredOverviewRows();
+
+      if (!rows || rows.length === 0) {
+        overviewTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">Geen gegevens gevonden.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        const rowKey = `${row.Weeknummer}|${row.Boekjaar}|${row.Naam}`;
+        const verschilInfo = getVerschilInfo(row);
+        tr.dataset.rowKey = rowKey;
+
+        tr.innerHTML = `
+          <td>${escapeHtml(row.Weeknummer)}</td>
+          <td>${escapeHtml(row.Boekjaar)}</td>
+          <td>${escapeHtml(row.Naam)}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal))}</td>
+          <td>${escapeHtml(formatNumber(verschilInfo.urenPerWeek))}</td>
+          <td class="${verschilInfo.isAfwijking ? 'text-danger' : ''}">${escapeHtml(verschilInfo.heeftUrenPerWeek ? formatNumber(verschilInfo.verschil) : '')}</td>
+        `;
+
+        if (selectedRowKey === rowKey) {
+          tr.classList.add('selected');
+        }
+
+        tr.addEventListener('click', async () => {
+          document.querySelectorAll('#overviewTable tbody tr').forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          selectedRowKey = rowKey;
+          await loadDetails(row);
+        });
+
+        overviewTableBody.appendChild(tr);
+      });
+    }
+
+    function renderDetails(rows) {
+      detailTableBody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        detailTableBody.innerHTML = `
+          <tr>
+            <td colspan="11" class="empty">Geen detailregels gevonden.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      // sorteer op datum zodat groepering klopt
+      rows.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
+
+      let currentDate = null;
+      let subtotal = 0;
+
+      function getWeekday(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('nl-NL', { weekday: 'long' }).format(date);
+      }
+
+      function appendSubtotalRow(date, total) {
+        if (date === null) return;
+
+        const tr = document.createElement('tr');
+        tr.style.background = '#f3f4f6';
+        tr.style.fontWeight = '700';
+
+        const weekday = getWeekday(date);
+
+        tr.innerHTML = `
+          <td colspan="6">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
+          <td>${escapeHtml(formatNumber(total))}</td>
+          <td colspan="4"></td>
+        `;
+
+        detailTableBody.appendChild(tr);
+      }
+
+      rows.forEach((row, index) => {
+        const rowDate = row.Datum;
+
+        if (currentDate !== null && rowDate !== currentDate) {
+          appendSubtotalRow(currentDate, subtotal);
+          subtotal = 0;
+        }
+
+        if (currentDate === null || rowDate !== currentDate) {
+          currentDate = rowDate;
+        }
+
+        const aantal = Number(row.Aantal || 0);
+        subtotal += aantal;
+
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
+          <td>${escapeHtml(row.Weeknummer ?? '')}</td>
+          <td>${escapeHtml(row.Boekjaar ?? '')}</td>
+          <td>${escapeHtml(row.Itemcode ?? '')}</td>
+          <td>${escapeHtml(row.Type_item ?? '')}</td>
+          <td>${escapeHtml(row.Project ?? '')}</td>
+          <td>${escapeHtml(row.Omschrijving ?? '')}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
+          <td>${escapeHtml(row.Urensoort ?? '')}</td>
+          <td>${escapeHtml(row.Omschrijving_2 ?? '')}</td>
+          <td>${escapeHtml(row.Naam ?? '')}</td>
+        `;
+
+        detailTableBody.appendChild(tr);
+
+        // laatste rij -> ook subtotaal toevoegen
+        if (index === rows.length - 1) {
+          appendSubtotalRow(currentDate, subtotal);
+        }
+      });
+    }
+
+    async function loadOverview() {
+      setStatus(statusLeft, 'Overzicht laden...', 'info');
+      setStatus(statusRight, '', 'info');
+      clearDetails();
+      selectedRowKey = null;
+      setLoading(spinnerLeft, true);
+
+      try {
+        const weeknummer = document.getElementById('weeknummer').value.trim();
+        const boekjaar = document.getElementById('boekjaar').value.trim();
+
+        const url = buildUrl(CONNECTOR_OVERVIEW, {
+          filterfieldids: 'Weeknummer,Boekjaar',
+          filtervalues: `${weeknummer},${boekjaar}`,
+          operatortypes: '1,1',
+          skip: 0,
+          take: 200,
+          orderbyfieldids: 'Naam'
+        });
+
+        const data = await fetchJson(url);
+        overviewRows = Array.isArray(data.rows) ? data.rows : [];
+        renderOverview();
+        setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
+      } catch (error) {
+        overviewRows = [];
+        clearOverview();
+        overviewTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">Overzicht kon niet geladen worden.</td>
+          </tr>
+        `;
+        setStatus(statusLeft, 'Fout bij laden overzicht: ' + error.message, 'error');
+      } finally {
+        setLoading(spinnerLeft, false);
+      }
+    }
+
+    async function loadDetails(selectedRow) {
+      setStatus(statusRight, 'Detailregels laden...', 'info');
+      detailMeta.textContent = `Geselecteerd: ${selectedRow.Naam}, week ${selectedRow.Weeknummer}, boekjaar ${selectedRow.Boekjaar}`;
+      setLoading(spinnerRight, true);
+
+      try {
+        const url = buildUrl(CONNECTOR_DETAILS, {
+          filterfieldids: 'Weeknummer,Boekjaar,Naam',
+          filtervalues: `${selectedRow.Weeknummer},${selectedRow.Boekjaar},${selectedRow.Naam}`,
+          operatortypes: '1,1,1',
+          skip: 0,
+          take: 200,
+          orderbyfieldids: 'Datum'
+        });
+
+        const data = await fetchJson(url);
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        renderDetails(rows);
+        setStatus(statusRight, `${rows.length} detailregels geladen.`, 'info');
+      } catch (error) {
+        renderDetails([]);
+        setStatus(statusRight, 'Fout bij laden details: ' + error.message, 'error');
+      } finally {
+        setLoading(spinnerRight, false);
+      }
+    }
+
+    alleenAfwijkingenCheckbox.addEventListener('change', () => {
+      renderOverview();
+      setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
+    });
+
+    btnLaden.addEventListener('click', loadOverview);
+
+    (function initDefaults() {
+      const weekInfo = getWeekInfo();
+      document.getElementById('weeknummer').value = weekInfo.week;
+      document.getElementById('boekjaar').value = weekInfo.year;
+      clearDetails();
+    })();
+  </script>
+</body>
+</html>
