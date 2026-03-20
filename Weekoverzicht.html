@@ -34,11 +34,15 @@
     .panel-left {
       flex: 1;
       min-width: 520px;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 32px);
     }
 
     .panel-right {
       flex: 1.35;
       min-width: 760px;
+      align-self: flex-start;
     }
 
     h1, h2 {
@@ -134,6 +138,12 @@
       border-radius: 8px;
       position: relative;
       min-height: 180px;
+    }
+
+    .overview-table-wrap {
+      flex: 1;
+      min-height: 300px;
+      overflow: auto;
     }
 
     table {
@@ -241,7 +251,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg=="/>
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
         </div>
 
         <div class="field">
@@ -271,7 +281,7 @@
 
       <div id="statusLeft" class="status"></div>
 
-      <div class="table-wrap">
+      <div class="table-wrap overview-table-wrap">
         <div id="spinnerLeft" class="spinner-overlay">
           <div class="spinner"></div>
         </div>
@@ -453,6 +463,10 @@
       return url.toString();
     }
 
+    function isRowGereedgemeld(row) {
+      return row.Gereedgemeld_door !== null && row.Gereedgemeld_door !== undefined && row.Gereedgemeld_door !== '';
+    }
+
     function escapeHtml(value) {
       if (value === null || value === undefined) return '';
       return String(value)
@@ -629,7 +643,7 @@
 
         // status kleuring
         const isGeaccordeerd = row.Geaccordeerd_door !== null && row.Geaccordeerd_door !== undefined && row.Geaccordeerd_door !== '';
-        const isGereed = row.Gereedgemeld_door !== null && row.Gereedgemeld_door !== undefined && row.Gereedgemeld_door !== '';
+        const isGereed = isRowGereedgemeld(row);
 
         if (isGereed) {
           tr.style.background = '#dcfce7'; // licht groen
@@ -638,11 +652,11 @@
         }
 
         tr.innerHTML = `
-          <td>
+          <td>${isRowGereedgemeld(row) ? '' : `
             <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
               ✏️
             </a>
-          </td>
+          `}</td>
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
           <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
