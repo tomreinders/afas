@@ -202,6 +202,24 @@
       font-weight: 700;
     }
 
+    .cell-red {
+      background: #fecaca;
+      color: #991b1b;
+      font-weight: 700;
+    }
+
+    .cell-blue {
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+
+    .cell-green-dark {
+      background: #166534;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
     .spinner-overlay {
       position: absolute;
       inset: 0;
@@ -251,7 +269,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg=="/>
         </div>
 
         <div class="field">
@@ -325,13 +343,36 @@
               <th>Project</th>
               <th>Omschrijving</th>
               <th>Urensoort</th>
-              <th>Omschrijving 2</th>
-              <th>Bewerken</th>
+              <th>Omschrijving uur</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td colspan="9" class="empty">Selecteer links eerst een medewerkerregel.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style="margin-top:20px;">Vergoedingen</h2>
+      <div class="table-wrap">
+        <table id="vergoedingTable">
+          <thead>
+            <tr>
+              <th>Bewerken</th>
+              <th>Datum</th>
+              <th>Weeknummer</th>
+              <th>Aantal</th>
+              <th>Itemcode</th>
+              <th>Project</th>
+              <th>Omschrijving</th>
+              <th>Urensoort</th>
+              <th>Omschrijving uur</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="9" class="empty">Nog geen vergoedingen geladen.</td>
             </tr>
           </tbody>
         </table>
@@ -346,6 +387,7 @@
 
     const overviewTableBody = document.querySelector('#overviewTable tbody');
     const detailTableBody = document.querySelector('#detailTable tbody');
+    const vergoedingTableBody = document.querySelector('#vergoedingTable tbody');
     const detailMeta = document.getElementById('detailMeta');
     const statusLeft = document.getElementById('statusLeft');
     const statusRight = document.getElementById('statusRight');
@@ -418,6 +460,11 @@
       detailTableBody.innerHTML = `
         <tr>
           <td colspan="9" class="empty">${message}</td>
+        </tr>
+      `;
+      vergoedingTableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="empty">Nog geen vergoedingen geladen.</td>
         </tr>
       `;
       detailMeta.textContent = 'Nog geen medewerker geselecteerd.';
@@ -581,6 +628,62 @@
       });
     }
 
+    function getOmschrijving2StyleClass(value) {
+      const text = (value ?? '').trim();
+      if (text === 'Ziekte uren') return 'cell-red';
+      if (text === 'Verlof') return 'cell-green-dark';
+      if (
+        text === 'Overuren 150%' ||
+        text === 'Overuren 200% (zon-/feestdag)' ||
+        text === 'Overuren - Tijd voor Tijd'
+      ) return 'cell-blue';
+      return '';
+    }
+
+    function renderVergoedingen(rows) {
+      vergoedingTableBody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        vergoedingTableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty">Geen vergoedingen gevonden.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+
+        const isGeaccordeerd = row.Geaccordeerd_door !== null && row.Geaccordeerd_door !== undefined && row.Geaccordeerd_door !== '';
+        const isGereed = isRowGereedgemeld(row);
+
+        if (isGereed) {
+          tr.style.background = '#dcfce7';
+        } else if (isGeaccordeerd) {
+          tr.style.background = '#ffedd5';
+        }
+
+        const omschrijving2Class = getOmschrijving2StyleClass(row.Omschrijving_2);
+        tr.innerHTML = `
+          <td>${isRowGereedgemeld(row) ? '' : `
+            <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
+              ✏️
+            </a>
+          `}</td>
+          <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
+          <td>${escapeHtml(row.Weeknummer ?? '')}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
+          <td>${escapeHtml(row.Itemcode ?? '')}</td>
+          <td>${escapeHtml(row.Project ?? '')}</td>
+          <td>${escapeHtml(row.Omschrijving ?? '')}</td>
+          <td>${escapeHtml(row.Urensoort ?? '')}</td>
+          <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
+        `;
+        vergoedingTableBody.appendChild(tr);
+      });
+    }
+
     function renderDetails(rows) {
       detailTableBody.innerHTML = '';
 
@@ -593,7 +696,6 @@
         return;
       }
 
-      // sorteer op datum zodat groepering klopt
       rows.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
 
       let currentDate = null;
@@ -617,7 +719,7 @@
 
         tr.innerHTML = `
           <td colspan="3">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
-          <td>${escapeHtml(formatNumber(total))}</td>
+          <td>${escapeHtml(formatNumber(total))} uren</td>
           <td colspan="5"></td>
         `;
 
@@ -641,15 +743,16 @@
 
         const tr = document.createElement('tr');
 
-        // status kleuring
         const isGeaccordeerd = row.Geaccordeerd_door !== null && row.Geaccordeerd_door !== undefined && row.Geaccordeerd_door !== '';
         const isGereed = isRowGereedgemeld(row);
 
         if (isGereed) {
-          tr.style.background = '#dcfce7'; // licht groen
+          tr.style.background = '#dcfce7';
         } else if (isGeaccordeerd) {
-          tr.style.background = '#ffedd5'; // licht oranje
+          tr.style.background = '#ffedd5';
         }
+
+        const omschrijving2Class = getOmschrijving2StyleClass(row.Omschrijving_2);
 
         tr.innerHTML = `
           <td>${isRowGereedgemeld(row) ? '' : `
@@ -664,12 +767,11 @@
           <td>${escapeHtml(row.Project ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
-          <td>${escapeHtml(row.Omschrijving_2 ?? '')}</td>
+          <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
         `;
 
         detailTableBody.appendChild(tr);
 
-        // laatste rij -> ook subtotaal toevoegen
         if (index === rows.length - 1) {
           appendSubtotalRow(currentDate, subtotal);
         }
@@ -732,10 +834,14 @@
 
         const data = await fetchJson(url);
         const rows = Array.isArray(data.rows) ? data.rows : [];
-        renderDetails(rows);
-        setStatus(statusRight, `${rows.length} detailregels geladen.`, 'info');
+        const detailRows = rows.filter(row => String(row.Type_item ?? '').toLowerCase() === 'werksoort');
+        const vergoedingRows = rows.filter(row => String(row.Type_item ?? '').toLowerCase() === 'kosten');
+        renderDetails(detailRows);
+        renderVergoedingen(vergoedingRows);
+        setStatus(statusRight, `${detailRows.length} detailregels en ${vergoedingRows.length} vergoedingen geladen.`, 'info');
       } catch (error) {
         renderDetails([]);
+        renderVergoedingen([]);
         setStatus(statusRight, 'Fout bij laden details: ' + error.message, 'error');
       } finally {
         setLoading(spinnerRight, false);
