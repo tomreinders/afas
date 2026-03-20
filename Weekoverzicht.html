@@ -241,7 +241,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg=="/>
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
         </div>
 
         <div class="field">
@@ -311,11 +311,12 @@
               <th>Urensoort</th>
               <th>Omschrijving 2</th>
               <th>Naam</th>
+              <th>Bewerken</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colspan="11" class="empty">Selecteer links eerst een medewerkerregel.</td>
+              <td colspan="12" class="empty">Selecteer links eerst een medewerkerregel.</td>
             </tr>
           </tbody>
         </table>
@@ -400,7 +401,7 @@
     function clearDetails(message = 'Selecteer links eerst een medewerkerregel.') {
       detailTableBody.innerHTML = `
         <tr>
-          <td colspan="11" class="empty">${message}</td>
+          <td colspan="12" class="empty">${message}</td>
         </tr>
       `;
       detailMeta.textContent = 'Nog geen medewerker geselecteerd.';
@@ -419,6 +420,31 @@
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return value;
       return new Intl.DateTimeFormat('nl-NL').format(date);
+    }
+
+    function formatDateTimeForAfas(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const day = pad(date.getDate());
+      const month = pad(date.getMonth() + 1);
+      const year = date.getFullYear();
+      const hours = pad(date.getHours());
+      const minutes = pad(date.getMinutes());
+      const seconds = pad(date.getSeconds());
+
+      return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+    }
+
+    function buildEditUrl(row) {
+      const baseUrl = 'https://87488.afasinsite.nl/aanpassen-nacalculatie-per-regel-prs/nacalculatie-per-regel-web-kara-bes';
+      const url = new URL(baseUrl);
+      url.searchParams.set('DaTi', formatDateTimeForAfas(row.Datum));
+      url.searchParams.set('EmId', row.Medewerker ?? '');
+      url.searchParams.set('Id', row.Regelnummer ?? '');
+      return url.toString();
     }
 
     function escapeHtml(value) {
@@ -513,7 +539,7 @@
       if (!rows || rows.length === 0) {
         detailTableBody.innerHTML = `
           <tr>
-            <td colspan="11" class="empty">Geen detailregels gevonden.</td>
+            <td colspan="12" class="empty">Geen detailregels gevonden.</td>
           </tr>
         `;
         return;
@@ -542,7 +568,7 @@
         const weekday = getWeekday(date);
 
         tr.innerHTML = `
-          <td colspan="6">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
+          <td colspan="7">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
           <td>${escapeHtml(formatNumber(total))}</td>
           <td colspan="4"></td>
         `;
@@ -567,6 +593,16 @@
 
         const tr = document.createElement('tr');
 
+        // status kleuring
+        const isGeaccordeerd = row.Geaccordeerd_door !== null && row.Geaccordeerd_door !== undefined && row.Geaccordeerd_door !== '';
+        const isGereed = row.Gereedgemeld_door !== null && row.Gereedgemeld_door !== undefined && row.Gereedgemeld_door !== '';
+
+        if (isGereed) {
+          tr.style.background = '#dcfce7'; // licht groen
+        } else if (isGeaccordeerd) {
+          tr.style.background = '#ffedd5'; // licht oranje
+        }
+
         tr.innerHTML = `
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
@@ -579,6 +615,11 @@
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving_2 ?? '')}</td>
           <td>${escapeHtml(row.Naam ?? '')}</td>
+          <td>
+            <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
+              ✏️
+            </a>
+          </td>
         `;
 
         detailTableBody.appendChild(tr);
