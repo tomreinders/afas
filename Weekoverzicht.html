@@ -300,6 +300,7 @@
         <table id="detailTable">
           <thead>
             <tr>
+              <th>Bewerken</th>
               <th>Datum</th>
               <th>Weeknummer</th>
               <th>Boekjaar</th>
@@ -604,6 +605,11 @@
         }
 
         tr.innerHTML = `
+          <td>
+            <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
+              ✏️
+            </a>
+          </td>
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
           <td>${escapeHtml(row.Boekjaar ?? '')}</td>
@@ -615,11 +621,6 @@
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving_2 ?? '')}</td>
           <td>${escapeHtml(row.Naam ?? '')}</td>
-          <td>
-            <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
-              ✏️
-            </a>
-          </td>
         `;
 
         detailTableBody.appendChild(tr);
