@@ -241,7 +241,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg=="/>
         </div>
 
         <div class="field">
@@ -252,6 +252,13 @@
         <div class="field">
           <label for="boekjaar">Boekjaar</label>
           <input id="boekjaar" type="number" min="2000" max="2100" value="2026" />
+        </div>
+
+        <div class="field">
+          <label for="naam2Filter">Naam 2</label>
+          <select id="naam2Filter">
+            <option value="">Alle</option>
+          </select>
         </div>
 
         <label class="checkbox-field" for="alleenAfwijkingen">
@@ -303,21 +310,18 @@
               <th>Bewerken</th>
               <th>Datum</th>
               <th>Weeknummer</th>
-              <th>Boekjaar</th>
+              <th>Aantal</th>
               <th>Itemcode</th>
-              <th>Type item</th>
               <th>Project</th>
               <th>Omschrijving</th>
-              <th>Aantal</th>
               <th>Urensoort</th>
               <th>Omschrijving 2</th>
-              <th>Naam</th>
               <th>Bewerken</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colspan="12" class="empty">Selecteer links eerst een medewerkerregel.</td>
+              <td colspan="9" class="empty">Selecteer links eerst een medewerkerregel.</td>
             </tr>
           </tbody>
         </table>
@@ -339,6 +343,7 @@
     const spinnerLeft = document.getElementById('spinnerLeft');
     const spinnerRight = document.getElementById('spinnerRight');
     const alleenAfwijkingenCheckbox = document.getElementById('alleenAfwijkingen');
+    const naam2Filter = document.getElementById('naam2Filter');
 
     let selectedRowKey = null;
     let overviewRows = [];
@@ -402,7 +407,7 @@
     function clearDetails(message = 'Selecteer links eerst een medewerkerregel.') {
       detailTableBody.innerHTML = `
         <tr>
-          <td colspan="12" class="empty">${message}</td>
+          <td colspan="9" class="empty">${message}</td>
         </tr>
       `;
       detailMeta.textContent = 'Nog geen medewerker geselecteerd.';
@@ -483,12 +488,40 @@
       };
     }
 
+    function populateNaam2Filter() {
+      const currentValue = naam2Filter.value;
+      const values = [...new Set(
+        overviewRows
+          .map(row => row.Naam_2)
+          .filter(value => value !== null && value !== undefined && value !== '')
+      )].sort((a, b) => String(a).localeCompare(String(b), 'nl'));
+
+      naam2Filter.innerHTML = '<option value="">Alle</option>';
+
+      values.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        naam2Filter.appendChild(option);
+      });
+
+      if (values.includes(currentValue)) {
+        naam2Filter.value = currentValue;
+      }
+    }
+
     function getFilteredOverviewRows() {
-      if (!alleenAfwijkingenCheckbox.checked) {
-        return overviewRows;
+      let rows = overviewRows;
+
+      if (naam2Filter.value) {
+        rows = rows.filter(row => (row.Naam_2 ?? '') === naam2Filter.value);
       }
 
-      return overviewRows.filter(row => getVerschilInfo(row).isAfwijking);
+      if (alleenAfwijkingenCheckbox.checked) {
+        rows = rows.filter(row => getVerschilInfo(row).isAfwijking);
+      }
+
+      return rows;
     }
 
     function renderOverview() {
@@ -540,7 +573,7 @@
       if (!rows || rows.length === 0) {
         detailTableBody.innerHTML = `
           <tr>
-            <td colspan="12" class="empty">Geen detailregels gevonden.</td>
+            <td colspan="9" class="empty">Geen detailregels gevonden.</td>
           </tr>
         `;
         return;
@@ -569,9 +602,9 @@
         const weekday = getWeekday(date);
 
         tr.innerHTML = `
-          <td colspan="7">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
+          <td colspan="3">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
           <td>${escapeHtml(formatNumber(total))}</td>
-          <td colspan="4"></td>
+          <td colspan="5"></td>
         `;
 
         detailTableBody.appendChild(tr);
@@ -612,15 +645,12 @@
           </td>
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
-          <td>${escapeHtml(row.Boekjaar ?? '')}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td>${escapeHtml(row.Itemcode ?? '')}</td>
-          <td>${escapeHtml(row.Type_item ?? '')}</td>
           <td>${escapeHtml(row.Project ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
-          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving_2 ?? '')}</td>
-          <td>${escapeHtml(row.Naam ?? '')}</td>
         `;
 
         detailTableBody.appendChild(tr);
@@ -654,6 +684,7 @@
 
         const data = await fetchJson(url);
         overviewRows = Array.isArray(data.rows) ? data.rows : [];
+        populateNaam2Filter();
         renderOverview();
         setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
       } catch (error) {
@@ -698,6 +729,11 @@
     }
 
     alleenAfwijkingenCheckbox.addEventListener('change', () => {
+      renderOverview();
+      setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
+    });
+
+    naam2Filter.addEventListener('change', () => {
       renderOverview();
       setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
     });
