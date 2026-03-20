@@ -269,7 +269,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg=="/>
+          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
         </div>
 
         <div class="field">
@@ -354,6 +354,23 @@
         </table>
       </div>
 
+      <h2 style="margin-top:20px;">Uren per categorie</h2>
+      <div class="table-wrap">
+        <table id="categorieTable">
+          <thead>
+            <tr>
+              <th>Categorie</th>
+              <th>Totaal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="2" class="empty">Nog geen categorie-overzicht geladen.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <h2 style="margin-top:20px;">Vergoedingen</h2>
       <div class="table-wrap">
         <table id="vergoedingTable">
@@ -388,6 +405,7 @@
     const overviewTableBody = document.querySelector('#overviewTable tbody');
     const detailTableBody = document.querySelector('#detailTable tbody');
     const vergoedingTableBody = document.querySelector('#vergoedingTable tbody');
+    const categorieTableBody = document.querySelector('#categorieTable tbody');
     const detailMeta = document.getElementById('detailMeta');
     const statusLeft = document.getElementById('statusLeft');
     const statusRight = document.getElementById('statusRight');
@@ -465,6 +483,11 @@
       vergoedingTableBody.innerHTML = `
         <tr>
           <td colspan="8" class="empty">Nog geen vergoedingen geladen.</td>
+        </tr>
+      `;
+      categorieTableBody.innerHTML = `
+        <tr>
+          <td colspan="2" class="empty">Nog geen categorie-overzicht geladen.</td>
         </tr>
       `;
       detailMeta.textContent = 'Nog geen medewerker geselecteerd.';
@@ -638,6 +661,37 @@
         text === 'Overuren - Tijd voor Tijd'
       ) return 'cell-blue';
       return '';
+    }
+
+    function renderCategorieOverzicht(rows) {
+      categorieTableBody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        categorieTableBody.innerHTML = `
+          <tr>
+            <td colspan="2" class="empty">Geen categorie-overzicht gevonden.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const totals = rows.reduce((acc, row) => {
+        const key = (row.Omschrijving_2 ?? '').trim() || 'Onbekend';
+        const aantal = Number(row.Aantal || 0);
+        acc[key] = (acc[key] || 0) + aantal;
+        return acc;
+      }, {});
+
+      Object.entries(totals)
+        .sort((a, b) => a[0].localeCompare(b[0], 'nl'))
+        .forEach(([categorie, totaal]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(categorie)}</td>
+            <td>${escapeHtml(formatNumber(totaal))} uren</td>
+          `;
+          categorieTableBody.appendChild(tr);
+        });
     }
 
     function renderVergoedingen(rows) {
@@ -837,10 +891,12 @@
         const detailRows = rows.filter(row => String(row.Type_item ?? '').toLowerCase() === 'werksoort');
         const vergoedingRows = rows.filter(row => String(row.Type_item ?? '').toLowerCase() === 'kosten');
         renderDetails(detailRows);
+        renderCategorieOverzicht(detailRows);
         renderVergoedingen(vergoedingRows);
         setStatus(statusRight, `${detailRows.length} detailregels en ${vergoedingRows.length} vergoedingen geladen.`, 'info');
       } catch (error) {
         renderDetails([]);
+        renderCategorieOverzicht([]);
         renderVergoedingen([]);
         setStatus(statusRight, 'Fout bij laden details: ' + error.message, 'error');
       } finally {
