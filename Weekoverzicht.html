@@ -261,7 +261,7 @@
     }
   </style>
 </head>
-<body onload="testurl()">
+<body>
   <div class="page">
     <div class="panel panel-left">
       <h1>Nacalculatie weekoverzicht</h1>
@@ -269,7 +269,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" placeholder="Plak hier je AFAS token" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" />
+          <input id="token" type="password" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" placeholder="Plak hier je AFAS token" />
         </div>
 
         <div class="field">
@@ -285,6 +285,13 @@
         <div class="field">
           <label for="naam2Filter">Leidinggevende</label>
           <select id="naam2Filter">
+            <option value="">Alle</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="werkgeverFilter">Werkgever</label>
+          <select id="werkgeverFilter">
             <option value="">Alle</option>
           </select>
         </div>
@@ -343,7 +350,7 @@
               <th>Project</th>
               <th>Omschrijving</th>
               <th>Urensoort</th>
-              <th>Omschrijving uur</th>
+              <th>Omschrijving 2</th>
             </tr>
           </thead>
           <tbody>
@@ -384,7 +391,7 @@
               <th>Project</th>
               <th>Omschrijving</th>
               <th>Urensoort</th>
-              <th>Omschrijving uur</th>
+              <th>Omschrijving 2</th>
             </tr>
           </thead>
           <tbody>
@@ -400,6 +407,7 @@
   <script>
     const AFAS_BASE_URL = 'https://87488.rest.afas.online/ProfitRestServices/connectors';
     const CONNECTOR_OVERVIEW = 'Insite_nacalculatie_week_overzicht';
+    const CONNECTOR_EMPLOYEES = 'Medewerker__Actuele_gegevens_';
     const CONNECTOR_DETAILS = 'Insite_nacalculatieregels';
 
     const overviewTableBody = document.querySelector('#overviewTable tbody');
@@ -414,6 +422,7 @@
     const spinnerRight = document.getElementById('spinnerRight');
     const alleenAfwijkingenCheckbox = document.getElementById('alleenAfwijkingen');
     const naam2Filter = document.getElementById('naam2Filter');
+    const werkgeverFilter = document.getElementById('werkgeverFilter');
 
     let selectedRowKey = null;
     let overviewRows = [];
@@ -425,10 +434,6 @@
       if (message) {
         element.classList.add(type);
       }
-    }
-
-    function testurl(){
-       console.log(window.location.href)
     }
 
     function setLoading(spinnerElement, isLoading) {
@@ -566,7 +571,8 @@
     function getVerschilInfo(row) {
       const urenPerWeek = row.Urenperweek;
       const heeftUrenPerWeek = urenPerWeek !== null && urenPerWeek !== undefined && urenPerWeek !== '';
-      const verschil = heeftUrenPerWeek ? Number(row.Aantal || 0) - Number(urenPerWeek || 0) : null;
+      const aantal = Number(row.Aantal || 0);
+      const verschil = heeftUrenPerWeek ? aantal - Number(urenPerWeek || 0) : null;
       const isAfwijking = heeftUrenPerWeek && verschil !== 0;
       return {
         urenPerWeek,
@@ -598,11 +604,37 @@
       }
     }
 
+    function populateWerkgeverFilter() {
+      const currentValue = werkgeverFilter.value;
+      const values = [...new Set(
+        overviewRows
+          .map(row => row.Naam_Werkgever ?? row.Naam_werkgever)
+          .filter(value => value !== null && value !== undefined && value !== '')
+      )].sort((a, b) => String(a).localeCompare(String(b), 'nl'));
+
+      werkgeverFilter.innerHTML = '<option value="">Alle</option>';
+
+      values.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        werkgeverFilter.appendChild(option);
+      });
+
+      if (values.includes(currentValue)) {
+        werkgeverFilter.value = currentValue;
+      }
+    }
+
     function getFilteredOverviewRows() {
       let rows = overviewRows;
 
       if (naam2Filter.value) {
         rows = rows.filter(row => (row.Naam_2 ?? '') === naam2Filter.value);
+      }
+
+      if (werkgeverFilter.value) {
+        rows = rows.filter(row => (row.Naam_Werkgever ?? '') === werkgeverFilter.value);
       }
 
       if (alleenAfwijkingenCheckbox.checked) {
@@ -628,6 +660,12 @@
       rows.forEach((row) => {
         const tr = document.createElement('tr');
         const rowKey = `${row.Weeknummer}|${row.Boekjaar}|${row.Naam}`;
+
+        if (row.Gereedgemeld === true) {
+          tr.style.background = '#dcfce7';
+        } else if (row.Geaccordeerd === true) {
+          tr.style.background = '#ffedd5';
+        }
         const verschilInfo = getVerschilInfo(row);
         tr.dataset.rowKey = rowKey;
 
@@ -836,6 +874,100 @@
       });
     }
 
+    function mergeOverviewWithEmployees(overviewDataRows, employeeDataRows, selectedWeek, selectedYear) {
+      const employeeMap = new Map();
+
+      (employeeDataRows || []).forEach(employee => {
+        const naam = employee.Naam ?? employee.Naam_medewerker ?? employee.Medewerker_naam ?? '';
+        const key = String(naam).trim().toLowerCase();
+        if (!key) return;
+        employeeMap.set(key, employee);
+      });
+
+      const groupedOverview = new Map();
+
+      (overviewDataRows || []).forEach(row => {
+        const key = String(row.Naam ?? '').trim().toLowerCase();
+        if (!key) return;
+
+        const rowAantal = Number(row.Aantal || 0);
+        const rowGeaccordeerd = row.Geaccordeerd === true;
+        const rowGereedgemeld = row.Gereedgemeld === true;
+        const existing = groupedOverview.get(key);
+
+        if (!existing) {
+          groupedOverview.set(key, {
+            ...row,
+            Aantal: rowAantal,
+            Geaccordeerd: rowGeaccordeerd,
+            Gereedgemeld: rowGereedgemeld
+          });
+          return;
+        }
+
+        existing.Aantal = Number(existing.Aantal || 0) + rowAantal;
+        existing.Geaccordeerd = existing.Geaccordeerd === true && rowGeaccordeerd === true;
+        existing.Gereedgemeld = existing.Gereedgemeld === true && rowGereedgemeld === true;
+
+        if ((existing.Urenperweek === null || existing.Urenperweek === undefined || existing.Urenperweek === '') && row.Urenperweek !== undefined) {
+          existing.Urenperweek = row.Urenperweek;
+        }
+        if ((!existing.Naam_2 || existing.Naam_2 === '') && row.Naam_2) {
+          existing.Naam_2 = row.Naam_2;
+        }
+        if ((!existing.Naam_Werkgever || existing.Naam_Werkgever === '') && (row.Naam_Werkgever || row.Naam_werkgever)) {
+          existing.Naam_Werkgever = row.Naam_Werkgever ?? row.Naam_werkgever ?? '';
+        }
+        if ((!existing.Medewerker || existing.Medewerker === '') && row.Medewerker) {
+          existing.Medewerker = row.Medewerker;
+        }
+      });
+
+      const mergedRows = [];
+      const usedKeys = new Set();
+
+      groupedOverview.forEach((row, key) => {
+        const employee = employeeMap.get(key);
+        const urenPerWeek = row.Urenperweek ?? employee?.Aantal_uren_per_week ?? employee?.Urenperweek ?? '';
+        const naam2 = row.Naam_2 ?? employee?.Naam_2 ?? employee?.Leidinggevende ?? '';
+        const naamWerkgever = row.Naam_Werkgever ?? row.Naam_werkgever ?? employee?.Naam_Werkgever ?? employee?.Naam_werkgever ?? '';
+
+        mergedRows.push({
+          ...row,
+          Urenperweek: urenPerWeek,
+          Naam_2: naam2,
+          Naam_Werkgever: naamWerkgever,
+          Medewerker: row.Medewerker ?? employee?.Medewerker ?? employee?.Medewerkernummer ?? ''
+        });
+
+        usedKeys.add(key);
+      });
+
+      (employeeDataRows || []).forEach(employee => {
+        const naam = employee.Naam ?? employee.Naam_medewerker ?? employee.Medewerker_naam ?? '';
+        const key = String(naam).trim().toLowerCase();
+        if (!key || usedKeys.has(key)) return;
+
+        const urenPerWeek = employee.Aantal_uren_per_week ?? employee.Urenperweek ?? '';
+        const naamWerkgever = employee.Naam_Werkgever ?? employee.Naam_werkgever ?? '';
+
+        mergedRows.push({
+          Weeknummer: Number(selectedWeek),
+          Boekjaar: Number(selectedYear),
+          Aantal: 0,
+          Naam: naam,
+          Urenperweek: urenPerWeek,
+          Naam_2: employee.Naam_2 ?? employee.Leidinggevende ?? '',
+          Naam_Werkgever: naamWerkgever,
+          Medewerker: employee.Medewerker ?? employee.Medewerkernummer ?? '',
+          Geaccordeerd: false,
+          Gereedgemeld: false
+        });
+      });
+
+      return mergedRows.sort((a, b) => String(a.Naam ?? '').localeCompare(String(b.Naam ?? ''), 'nl'));
+    }
+
     async function loadOverview() {
       setStatus(statusLeft, 'Overzicht laden...', 'info');
       setStatus(statusRight, '', 'info');
@@ -847,20 +979,34 @@
         const weeknummer = document.getElementById('weeknummer').value.trim();
         const boekjaar = document.getElementById('boekjaar').value.trim();
 
-        const url = buildUrl(CONNECTOR_OVERVIEW, {
+        const overviewUrl = buildUrl(CONNECTOR_OVERVIEW, {
           filterfieldids: 'Weeknummer,Boekjaar',
           filtervalues: `${weeknummer},${boekjaar}`,
           operatortypes: '1,1',
           skip: 0,
-          take: 200,
+          take: 500,
           orderbyfieldids: 'Naam'
         });
 
-        const data = await fetchJson(url);
-        overviewRows = Array.isArray(data.rows) ? data.rows : [];
+        const employeeUrl = buildUrl(CONNECTOR_EMPLOYEES, {
+          skip: 0,
+          take: 500,
+          orderbyfieldids: 'Naam'
+        });
+
+        const [overviewData, employeeData] = await Promise.all([
+          fetchJson(overviewUrl),
+          fetchJson(employeeUrl)
+        ]);
+
+        const overviewDataRows = Array.isArray(overviewData.rows) ? overviewData.rows : [];
+        const employeeDataRows = Array.isArray(employeeData.rows) ? employeeData.rows : [];
+
+        overviewRows = mergeOverviewWithEmployees(overviewDataRows, employeeDataRows, weeknummer, boekjaar);
         populateNaam2Filter();
+        populateWerkgeverFilter();
         renderOverview();
-        setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
+        setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} medewerkers geladen.`, 'info');
       } catch (error) {
         overviewRows = [];
         clearOverview();
@@ -918,7 +1064,24 @@
       setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
     });
 
+    werkgeverFilter.addEventListener('change', () => {
+      renderOverview();
+      setStatus(statusLeft, `${getFilteredOverviewRows().length} regels getoond van ${overviewRows.length} geladen.`, 'info');
+    });
+
     btnLaden.addEventListener('click', loadOverview);
+
+    document.getElementById('weeknummer').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        loadOverview();
+      }
+    });
+
+    document.getElementById('boekjaar').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        loadOverview();
+      }
+    });
 
     (function initDefaults() {
       const weekInfo = getWeekInfo();
