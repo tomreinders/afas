@@ -261,7 +261,7 @@
     }
   </style>
 </head>
-<body>
+<body onload="testurl()">
   <div class="page">
     <div class="panel panel-left">
       <h1>Nacalculatie weekoverzicht</h1>
@@ -425,6 +425,10 @@
       if (message) {
         element.classList.add(type);
       }
+    }
+
+    function testurl(){
+       console.log(window.location.href)
     }
 
     function setLoading(spinnerElement, isLoading) {
