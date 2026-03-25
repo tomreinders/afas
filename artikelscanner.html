@@ -313,6 +313,7 @@
 
       <div class="note">
         Werkt meestal het best via HTTPS of localhost. Op telefoon liefst in Chrome of Safari met camerarechten ingeschakeld.
+        Deze versie is sneller gezet met hogere scansnelheid, bredere scanzone en browseroptimalisatie.
       </div>
     </div>
 
@@ -349,6 +350,7 @@
     let lastConfirmedValue = "";
     let lastConfirmedTime = 0;
     let pendingScan = null;
+    let scanCooldownUntil = 0;
     let modalOpen = false;
 
     const readerId = "reader";
@@ -416,10 +418,12 @@
 
     function shouldIgnoreScan(text) {
       const now = Date.now();
-      return text === lastConfirmedValue && now - lastConfirmedTime < 1200;
+      if (now < scanCooldownUntil) return true;
+      return text === lastConfirmedValue && now - lastConfirmedTime < 900;
     }
 
     function openConfirmModal(code, type) {
+      scanCooldownUntil = Date.now() + 1200;
       pendingScan = { code, type };
       modalOpen = true;
       confirmCodeValueEl.textContent = code;
@@ -438,6 +442,7 @@
       if (!pendingScan) return;
       addArticleToList(pendingScan.code, pendingScan.type);
       closeConfirmModal();
+      scanCooldownUntil = Date.now() + 500;
     }
 
     function rejectPendingScan() {
@@ -445,6 +450,7 @@
         updateStatus(`scan geannuleerd: ${pendingScan.code}`);
       }
       closeConfirmModal();
+      scanCooldownUntil = Date.now() + 300;
     }
 
     function getCodeType(decodedResult) {
@@ -494,9 +500,12 @@
         await html5QrCode.start(
           { facingMode: "environment" },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
+            fps: 18,
+            qrbox: { width: 320, height: 180 },
             aspectRatio: 1.7778,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            },
             disableFlip: false,
             rememberLastUsedCamera: true
           },
