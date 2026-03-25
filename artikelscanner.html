@@ -60,6 +60,18 @@
       border-radius: 12px;
       overflow: hidden;
       background: #fff;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #videoPreview {
+      width: 100%;
+      height: auto;
+      min-height: 340px;
+      object-fit: cover;
+      background: #000;
     }
 
     .controls {
@@ -285,7 +297,9 @@
         Na iedere scan verschijnt eerst een bevestiging. Pas na bevestigen komt het artikelnummer in de lijst.
       </p>
 
-      <div id="reader"></div>
+      <div id="reader">
+        <video id="videoPreview" muted playsinline></video>
+      </div>
 
       <div class="controls">
         <button class="btn-primary" id="startBtn">Scanner starten</button>
@@ -366,6 +380,7 @@
     const emptyMessageEl = document.getElementById("emptyMessage");
     const manualCodeEl = document.getElementById("manualCode");
     const readerEl = document.getElementById("reader");
+    const videoPreviewEl = document.getElementById("videoPreview");
 
     const confirmModalEl = document.getElementById("confirmModal");
     const confirmCodeValueEl = document.getElementById("confirmCodeValue");
@@ -483,6 +498,17 @@
       }
 
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          updateStatus("de browser ondersteunt geen cameratoegang.");
+          return;
+        }
+
+        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+        if (!devices || devices.length === 0) {
+          updateStatus("geen camera gevonden op dit apparaat.");
+          return;
+        }
+
         const hints = new Map();
         hints.set(DecodeHintType.POSSIBLE_FORMATS, [
           BarcodeFormat.QR_CODE,
@@ -490,11 +516,16 @@
         ]);
 
         scanner = new BrowserMultiFormatReader(hints);
-        readerEl.innerHTML = "";
 
-        videoControls = await scanner.decodeFromVideoDevice(
-          undefined,
-          "reader",
+        videoControls = await scanner.decodeFromConstraints(
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          },
+          videoPreviewEl,
           (result, error) => {
             if (result) {
               handleResult(result);
@@ -511,7 +542,20 @@
         updateStatus("scanner is gestart. Richt de camera op een QR of EAN-13 code.");
       } catch (error) {
         console.error(error);
-        updateStatus("scanner kon niet gestart worden. Controleer camerarechten en HTTPS.");
+
+        const errorText = String(error && error.message ? error.message : error);
+
+        if (errorText.toLowerCase().includes("permission") || errorText.toLowerCase().includes("denied")) {
+          updateStatus("camera toegang geweigerd. Geef camerarechten aan deze pagina.");
+          return;
+        }
+
+        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+          updateStatus("scanner kon niet starten. Open deze pagina via HTTPS of localhost.");
+          return;
+        }
+
+        updateStatus("scanner kon niet gestart worden. Controleer camerarechten, HTTPS en browserondersteuning.");
       }
     }
 
@@ -522,12 +566,13 @@
           videoControls = null;
         }
 
-        if (scanner) {
-          scanner = null;
+        if (scanner && typeof scanner.reset === "function") {
+          scanner.reset();
         }
 
-        readerEl.innerHTML = "";
+        scanner = null;
         scannerRunning = false;
+        videoPreviewEl.srcObject = null;
         updateStatus("scanner is gestopt.");
       } catch (error) {
         console.error(error);
