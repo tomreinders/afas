@@ -60,18 +60,6 @@
       border-radius: 12px;
       overflow: hidden;
       background: #fff;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #videoPreview {
-      width: 100%;
-      height: auto;
-      min-height: 340px;
-      object-fit: cover;
-      background: #000;
     }
 
     .controls {
@@ -293,13 +281,11 @@
     <div class="card">
       <h1>Magazijn Scanner QR en EAN-13</h1>
       <p>
-        Scan meerdere codes achter elkaar met je telefoon. Zowel QR-codes als EAN-13 barcodes worden gelezen.
-        Na iedere scan verschijnt eerst een bevestiging. Pas na bevestigen komt het artikelnummer in de lijst.
+        Deze versie gebruikt weer dezelfde basis als de eerste werkende scanner, maar nu uitgebreid met EAN-13 en een bevestigingsvenster.
+        Na iedere scan moet je eerst bevestigen voordat de code in de lijst komt.
       </p>
 
-      <div id="reader">
-        <video id="videoPreview" muted playsinline></video>
-      </div>
+      <div id="reader"></div>
 
       <div class="controls">
         <button class="btn-primary" id="startBtn">Scanner starten</button>
@@ -326,8 +312,7 @@
       </div>
 
       <div class="note">
-        Deze versie gebruikt <code>@zxing/browser</code> zodat QR en EAN-13 op een telefoon kunnen worden gescand.
-        Voor cameratoegang werkt dit het best via HTTPS of op localhost.
+        Werkt meestal het best via HTTPS of localhost. Op telefoon liefst in Chrome of Safari met camerarechten ingeschakeld.
       </div>
     </div>
 
@@ -356,32 +341,23 @@
     </div>
   </div>
 
-  <script type="module">
-    import {
-      BrowserMultiFormatReader,
-      BarcodeFormat,
-      DecodeHintType,
-      NotFoundException
-    } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm";
-
-    let scanner = null;
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script>
+    let html5QrCode = null;
     let scannerRunning = false;
     let scannedArticles = [];
     let lastConfirmedValue = "";
     let lastConfirmedTime = 0;
     let pendingScan = null;
-    let videoControls = null;
     let modalOpen = false;
 
+    const readerId = "reader";
     const statusEl = document.getElementById("status");
     const lastScannedEl = document.getElementById("lastScanned");
     const scanCountEl = document.getElementById("scanCount");
     const articleListEl = document.getElementById("articleList");
     const emptyMessageEl = document.getElementById("emptyMessage");
     const manualCodeEl = document.getElementById("manualCode");
-    const readerEl = document.getElementById("reader");
-    const videoPreviewEl = document.getElementById("videoPreview");
-
     const confirmModalEl = document.getElementById("confirmModal");
     const confirmCodeValueEl = document.getElementById("confirmCodeValue");
     const confirmCodeTypeEl = document.getElementById("confirmCodeType");
@@ -394,13 +370,6 @@
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
-    }
-
-    function normalizeFormat(format) {
-      const value = String(format || "onbekend");
-      if (value.includes("QR_CODE")) return "QR";
-      if (value.includes("EAN_13")) return "EAN-13";
-      return value;
     }
 
     function renderList() {
@@ -425,7 +394,7 @@
         articleListEl.appendChild(li);
       });
 
-      scanCountEl.textContent = String(scannedArticles.length);
+      scanCountEl.textContent = scannedArticles.length;
       lastScannedEl.textContent = scannedArticles[scannedArticles.length - 1].code;
     }
 
@@ -441,9 +410,13 @@
 
       lastConfirmedValue = cleanCode;
       lastConfirmedTime = Date.now();
-
       renderList();
       updateStatus(`code bevestigd en toegevoegd: ${cleanCode}`);
+    }
+
+    function shouldIgnoreScan(text) {
+      const now = Date.now();
+      return text === lastConfirmedValue && now - lastConfirmedTime < 1200;
     }
 
     function openConfirmModal(code, type) {
@@ -474,21 +447,28 @@
       closeConfirmModal();
     }
 
-    function shouldIgnoreScan(text) {
-      const now = Date.now();
-      return text === lastConfirmedValue && now - lastConfirmedTime < 1200;
+    function getCodeType(decodedResult) {
+      const result = decodedResult && decodedResult.result ? decodedResult.result : decodedResult;
+      const format = result && result.format ? String(result.format.formatName || result.format) : "Onbekend";
+
+      if (format.toUpperCase().includes("QR")) return "QR";
+      if (format.toUpperCase().includes("EAN_13") || format.toUpperCase().includes("EAN-13")) return "EAN-13";
+      if (format.toUpperCase().includes("EAN13")) return "EAN-13";
+      return format;
     }
 
-    function handleResult(result) {
-      if (!result || modalOpen) return;
+    function handleScanSuccess(decodedText, decodedResult) {
+      if (modalOpen) return;
 
-      const text = String(result.getText() || "").trim();
-      const type = normalizeFormat(result.getBarcodeFormat());
-
+      const text = String(decodedText || "").trim();
       if (!text) return;
       if (shouldIgnoreScan(text)) return;
 
+      const type = getCodeType(decodedResult);
       openConfirmModal(text, type);
+    }
+
+    function handleScanError() {
     }
 
     async function startScanner() {
@@ -498,81 +478,51 @@
       }
 
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          updateStatus("de browser ondersteunt geen cameratoegang.");
+        if (!window.Html5Qrcode) {
+          updateStatus("scannerbibliotheek is nog niet geladen.");
           return;
         }
 
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-        if (!devices || devices.length === 0) {
-          updateStatus("geen camera gevonden op dit apparaat.");
-          return;
-        }
+        html5QrCode = new Html5Qrcode(readerId, {
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.EAN_13
+          ],
+          verbose: false
+        });
 
-        const hints = new Map();
-        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-          BarcodeFormat.QR_CODE,
-          BarcodeFormat.EAN_13
-        ]);
-
-        scanner = new BrowserMultiFormatReader(hints);
-
-        videoControls = await scanner.decodeFromConstraints(
+        await html5QrCode.start(
+          { facingMode: "environment" },
           {
-            video: {
-              facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.7778,
+            disableFlip: false,
+            rememberLastUsedCamera: true
           },
-          videoPreviewEl,
-          (result, error) => {
-            if (result) {
-              handleResult(result);
-              return;
-            }
-
-            if (error && !(error instanceof NotFoundException)) {
-              console.error(error);
-            }
-          }
+          handleScanSuccess,
+          handleScanError
         );
 
         scannerRunning = true;
         updateStatus("scanner is gestart. Richt de camera op een QR of EAN-13 code.");
       } catch (error) {
         console.error(error);
-
-        const errorText = String(error && error.message ? error.message : error);
-
-        if (errorText.toLowerCase().includes("permission") || errorText.toLowerCase().includes("denied")) {
-          updateStatus("camera toegang geweigerd. Geef camerarechten aan deze pagina.");
-          return;
-        }
-
-        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-          updateStatus("scanner kon niet starten. Open deze pagina via HTTPS of localhost.");
-          return;
-        }
-
-        updateStatus("scanner kon niet gestart worden. Controleer camerarechten, HTTPS en browserondersteuning.");
+        updateStatus("scanner kon niet gestart worden. Controleer camerarechten en HTTPS.");
       }
     }
 
     async function stopScanner() {
+      if (!scannerRunning || !html5QrCode) {
+        updateStatus("scanner is al gestopt.");
+        return;
+      }
+
       try {
-        if (videoControls) {
-          videoControls.stop();
-          videoControls = null;
-        }
-
-        if (scanner && typeof scanner.reset === "function") {
-          scanner.reset();
-        }
-
-        scanner = null;
+        await html5QrCode.stop();
+        await html5QrCode.clear();
         scannerRunning = false;
-        videoPreviewEl.srcObject = null;
+        html5QrCode = null;
         updateStatus("scanner is gestopt.");
       } catch (error) {
         console.error(error);
@@ -591,9 +541,9 @@
     function addManualArticle() {
       const value = manualCodeEl.value.trim();
       if (!value) return;
-
       openConfirmModal(value, "Handmatig");
       manualCodeEl.value = "";
+      manualCodeEl.focus();
     }
 
     function exportToCsv() {
