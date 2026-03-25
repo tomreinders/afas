@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magazijn QR Scanner</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #dc2626;
+      --success: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    #reader {
+      width: 100%;
+      min-height: 320px;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1e40af;
+      font-weight: 600;
+    }
+
+    .scan-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .info-box {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    ol {
+      padding-left: 22px;
+      margin-bottom: 0;
+    }
+
+    li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eef2f7;
+      word-break: break-word;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: var(--success);
+      font-size: 12px;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+
+    .manual-input {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .manual-input input {
+      flex: 1;
+      min-width: 220px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    .note {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Magazijn QR Scanner</h1>
+      <p>
+        Scan meerdere QR-codes achter elkaar. Elke gescande code wordt automatisch toegevoegd aan de artikellijst hieronder.
+        Deze scanner werkt met cijfers en letters.
+      </p>
+
+      <div id="reader"></div>
+
+      <div class="controls">
+        <button class="btn-primary" id="startBtn">Scanner starten</button>
+        <button class="btn-secondary" id="stopBtn">Scanner stoppen</button>
+        <button class="btn-danger" id="clearBtn">Lijst leegmaken</button>
+      </div>
+
+      <div class="manual-input">
+        <input type="text" id="manualCode" placeholder="Artikelnummer handmatig invoeren" />
+        <button class="btn-secondary" id="addManualBtn">Toevoegen</button>
+      </div>
+
+      <div class="status" id="status">Status: scanner nog niet gestart.</div>
+
+      <div class="scan-info">
+        <div class="info-box">
+          <strong>Laatst gescand</strong>
+          <span id="lastScanned">Nog niets gescand</span>
+        </div>
+        <div class="info-box">
+          <strong>Aantal scans</strong>
+          <span id="scanCount">0</span>
+        </div>
+      </div>
+
+      <div class="note">
+        Duplicaten worden standaard ook toegevoegd. Wil je dat niet, pas dan de functie <code>addArticleToList</code> aan.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="list-header">
+        <h2>Gescannde artikelen</h2>
+        <button class="btn-secondary" id="exportBtn">Exporteer naar CSV</button>
+      </div>
+      <div id="listWrapper">
+        <p class="empty" id="emptyMessage">Nog geen artikelen gescand.</p>
+        <ol id="articleList"></ol>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script>
+    let html5QrCode = null;
+    let scannerRunning = false;
+    let scannedArticles = [];
+    let lastScanTime = 0;
+    let lastScanValue = "";
+
+    const readerId = "reader";
+    const statusEl = document.getElementById("status");
+    const lastScannedEl = document.getElementById("lastScanned");
+    const scanCountEl = document.getElementById("scanCount");
+    const articleListEl = document.getElementById("articleList");
+    const emptyMessageEl = document.getElementById("emptyMessage");
+    const manualCodeEl = document.getElementById("manualCode");
+
+    function updateStatus(message) {
+      statusEl.textContent = "Status: " + message;
+    }
+
+    function renderList() {
+      articleListEl.innerHTML = "";
+
+      if (scannedArticles.length === 0) {
+        emptyMessageEl.style.display = "block";
+        scanCountEl.textContent = "0";
+        lastScannedEl.textContent = "Nog niets gescand";
+        return;
+      }
+
+      emptyMessageEl.style.display = "none";
+
+      scannedArticles.forEach((article, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <strong>${escapeHtml(article.code)}</strong>
+          <span class="badge">#${index + 1}</span>
+        `;
+        articleListEl.appendChild(li);
+      });
+
+      scanCountEl.textContent = scannedArticles.length;
+      lastScannedEl.textContent = scannedArticles[scannedArticles.length - 1].code;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function addArticleToList(code) {
+      const cleanCode = String(code).trim();
+      if (!cleanCode) return;
+
+      scannedArticles.push({
+        code: cleanCode,
+        scannedAt: new Date().toISOString()
+      });
+
+      renderList();
+      updateStatus(`code toegevoegd: ${cleanCode}`);
+    }
+
+    function handleScanSuccess(decodedText) {
+      const now = Date.now();
+
+      if (decodedText === lastScanValue && now - lastScanTime < 1200) {
+        return;
+      }
+
+      lastScanValue = decodedText;
+      lastScanTime = now;
+
+      addArticleToList(decodedText);
+    }
+
+    function handleScanError() {
+      // Hier hoef je meestal niets mee te doen.
+      // Deze callback vuurt vaak terwijl de camera zoekt naar een code.
+    }
+
+    async function startScanner() {
+      if (scannerRunning) {
+        updateStatus("scanner draait al.");
+        return;
+      }
+
+      try {
+        if (!window.Html5Qrcode) {
+          updateStatus("QR bibliotheek is nog niet geladen.");
+          return;
+        }
+
+        html5QrCode = new Html5Qrcode(readerId);
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          handleScanSuccess,
+          handleScanError
+        );
+
+        scannerRunning = true;
+        updateStatus("scanner is gestart. Richt de camera op een QR-code.");
+      } catch (error) {
+        console.error(error);
+        updateStatus("scanner kon niet gestart worden. Controleer camerarechten en HTTPS.");
+      }
+    }
+
+    async function stopScanner() {
+      if (!scannerRunning || !html5QrCode) {
+        updateStatus("scanner is al gestopt.");
+        return;
+      }
+
+      try {
+        await html5QrCode.stop();
+        await html5QrCode.clear();
+        scannerRunning = false;
+        html5QrCode = null;
+        updateStatus("scanner is gestopt.");
+      } catch (error) {
+        console.error(error);
+        updateStatus("scanner kon niet netjes worden gestopt.");
+      }
+    }
+
+    function clearList() {
+      scannedArticles = [];
+      lastScanTime = 0;
+      lastScanValue = "";
+      renderList();
+      updateStatus("lijst is leeggemaakt.");
+    }
+
+    function addManualArticle() {
+      const value = manualCodeEl.value.trim();
+      if (!value) return;
+
+      addArticleToList(value);
+      manualCodeEl.value = "";
+      manualCodeEl.focus();
+    }
+
+    function exportToCsv() {
+      if (scannedArticles.length === 0) {
+        updateStatus("er zijn geen artikelen om te exporteren.");
+        return;
+      }
+
+      const header = ["Artikelnummer", "ScanTijd"];
+      const rows = scannedArticles.map(item => [item.code, item.scannedAt]);
+      const csvContent = [header, ...rows]
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "gescande_artikelen.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      updateStatus("CSV export is gedownload.");
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startScanner);
+    document.getElementById("stopBtn").addEventListener("click", stopScanner);
+    document.getElementById("clearBtn").addEventListener("click", clearList);
+    document.getElementById("addManualBtn").addEventListener("click", addManualArticle);
+    document.getElementById("exportBtn").addEventListener("click", exportToCsv);
+
+    manualCodeEl.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        addManualArticle();
+      }
+    });
+
+    renderList();
+  </script>
+</body>
+</html>
