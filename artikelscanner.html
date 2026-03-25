@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Magazijn QR Scanner</title>
+  <title>Magazijn Scanner QR en EAN-13</title>
   <style>
     :root {
       --bg: #f4f7fb;
@@ -15,6 +15,8 @@
       --accent-hover: #1d4ed8;
       --danger: #dc2626;
       --success: #059669;
+      --warning: #d97706;
+      --overlay: rgba(17, 24, 39, 0.65);
     }
 
     * {
@@ -29,7 +31,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 24px;
     }
@@ -53,7 +55,7 @@
 
     #reader {
       width: 100%;
-      min-height: 320px;
+      min-height: 340px;
       border: 2px dashed var(--border);
       border-radius: 12px;
       overflow: hidden;
@@ -101,6 +103,24 @@
 
     .btn-danger:hover {
       background: #b91c1c;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #047857;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #b45309;
     }
 
     .status {
@@ -166,6 +186,17 @@
       margin-left: 8px;
     }
 
+    .type-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     .manual-input {
       display: flex;
       gap: 10px;
@@ -188,9 +219,59 @@
       margin-top: 10px;
     }
 
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: var(--overlay);
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 460px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+    }
+
+    .modal-box h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .confirm-code {
+      margin: 16px 0;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      font-size: 20px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 600px) {
       .container {
         padding: 14px;
+      }
+
+      .confirm-code {
+        font-size: 17px;
       }
     }
   </style>
@@ -198,10 +279,10 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>Magazijn QR Scanner</h1>
+      <h1>Magazijn Scanner QR en EAN-13</h1>
       <p>
-        Scan meerdere QR-codes achter elkaar. Elke gescande code wordt automatisch toegevoegd aan de artikellijst hieronder.
-        Deze scanner werkt met cijfers en letters.
+        Scan meerdere codes achter elkaar met je telefoon. Zowel QR-codes als EAN-13 barcodes worden gelezen.
+        Na iedere scan verschijnt eerst een bevestiging. Pas na bevestigen komt het artikelnummer in de lijst.
       </p>
 
       <div id="reader"></div>
@@ -221,8 +302,8 @@
 
       <div class="scan-info">
         <div class="info-box">
-          <strong>Laatst gescand</strong>
-          <span id="lastScanned">Nog niets gescand</span>
+          <strong>Laatst bevestigd</strong>
+          <span id="lastScanned">Nog niets bevestigd</span>
         </div>
         <div class="info-box">
           <strong>Aantal scans</strong>
@@ -231,13 +312,14 @@
       </div>
 
       <div class="note">
-        Duplicaten worden standaard ook toegevoegd. Wil je dat niet, pas dan de functie <code>addArticleToList</code> aan.
+        Deze versie gebruikt <code>@zxing/browser</code> zodat QR en EAN-13 op een telefoon kunnen worden gescand.
+        Voor cameratoegang werkt dit het best via HTTPS of op localhost.
       </div>
     </div>
 
     <div class="card">
       <div class="list-header">
-        <h2>Gescannde artikelen</h2>
+        <h2>Gescande artikelen</h2>
         <button class="btn-secondary" id="exportBtn">Exporteer naar CSV</button>
       </div>
       <div id="listWrapper">
@@ -247,24 +329,63 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/html5-qrcode" defer></script>
-  <script>
-    let html5QrCode = null;
+  <div class="modal" id="confirmModal">
+    <div class="modal-box">
+      <h3>Scan gevonden</h3>
+      <p>Controleer de code en bevestig deze scan.</p>
+      <div class="confirm-code" id="confirmCodeValue">-</div>
+      <div class="note" id="confirmCodeType">Type: onbekend</div>
+      <div class="modal-actions">
+        <button class="btn-success" id="confirmScanBtn">Bevestigen</button>
+        <button class="btn-warning" id="rejectScanBtn">Annuleren</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      BrowserMultiFormatReader,
+      BarcodeFormat,
+      DecodeHintType,
+      NotFoundException
+    } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm";
+
+    let scanner = null;
     let scannerRunning = false;
     let scannedArticles = [];
-    let lastScanTime = 0;
-    let lastScanValue = "";
+    let lastConfirmedValue = "";
+    let lastConfirmedTime = 0;
+    let pendingScan = null;
+    let videoControls = null;
+    let modalOpen = false;
 
-    const readerId = "reader";
     const statusEl = document.getElementById("status");
     const lastScannedEl = document.getElementById("lastScanned");
     const scanCountEl = document.getElementById("scanCount");
     const articleListEl = document.getElementById("articleList");
     const emptyMessageEl = document.getElementById("emptyMessage");
     const manualCodeEl = document.getElementById("manualCode");
+    const readerEl = document.getElementById("reader");
+
+    const confirmModalEl = document.getElementById("confirmModal");
+    const confirmCodeValueEl = document.getElementById("confirmCodeValue");
+    const confirmCodeTypeEl = document.getElementById("confirmCodeType");
 
     function updateStatus(message) {
       statusEl.textContent = "Status: " + message;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function normalizeFormat(format) {
+      const value = String(format || "onbekend");
+      if (value.includes("QR_CODE")) return "QR";
+      if (value.includes("EAN_13")) return "EAN-13";
+      return value;
     }
 
     function renderList() {
@@ -273,7 +394,7 @@
       if (scannedArticles.length === 0) {
         emptyMessageEl.style.display = "block";
         scanCountEl.textContent = "0";
-        lastScannedEl.textContent = "Nog niets gescand";
+        lastScannedEl.textContent = "Nog niets bevestigd";
         return;
       }
 
@@ -284,49 +405,75 @@
         li.innerHTML = `
           <strong>${escapeHtml(article.code)}</strong>
           <span class="badge">#${index + 1}</span>
+          <span class="type-badge">${escapeHtml(article.type)}</span>
         `;
         articleListEl.appendChild(li);
       });
 
-      scanCountEl.textContent = scannedArticles.length;
+      scanCountEl.textContent = String(scannedArticles.length);
       lastScannedEl.textContent = scannedArticles[scannedArticles.length - 1].code;
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement("div");
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    function addArticleToList(code) {
+    function addArticleToList(code, type) {
       const cleanCode = String(code).trim();
       if (!cleanCode) return;
 
       scannedArticles.push({
         code: cleanCode,
+        type: type || "Onbekend",
         scannedAt: new Date().toISOString()
       });
 
+      lastConfirmedValue = cleanCode;
+      lastConfirmedTime = Date.now();
+
       renderList();
-      updateStatus(`code toegevoegd: ${cleanCode}`);
+      updateStatus(`code bevestigd en toegevoegd: ${cleanCode}`);
     }
 
-    function handleScanSuccess(decodedText) {
-      const now = Date.now();
+    function openConfirmModal(code, type) {
+      pendingScan = { code, type };
+      modalOpen = true;
+      confirmCodeValueEl.textContent = code;
+      confirmCodeTypeEl.textContent = `Type: ${type}`;
+      confirmModalEl.classList.add("open");
+      updateStatus(`scan gevonden: ${code}. Wacht op bevestiging.`);
+    }
 
-      if (decodedText === lastScanValue && now - lastScanTime < 1200) {
-        return;
+    function closeConfirmModal() {
+      confirmModalEl.classList.remove("open");
+      modalOpen = false;
+      pendingScan = null;
+    }
+
+    function confirmPendingScan() {
+      if (!pendingScan) return;
+      addArticleToList(pendingScan.code, pendingScan.type);
+      closeConfirmModal();
+    }
+
+    function rejectPendingScan() {
+      if (pendingScan) {
+        updateStatus(`scan geannuleerd: ${pendingScan.code}`);
       }
-
-      lastScanValue = decodedText;
-      lastScanTime = now;
-
-      addArticleToList(decodedText);
+      closeConfirmModal();
     }
 
-    function handleScanError() {
-      // Hier hoef je meestal niets mee te doen.
-      // Deze callback vuurt vaak terwijl de camera zoekt naar een code.
+    function shouldIgnoreScan(text) {
+      const now = Date.now();
+      return text === lastConfirmedValue && now - lastConfirmedTime < 1200;
+    }
+
+    function handleResult(result) {
+      if (!result || modalOpen) return;
+
+      const text = String(result.getText() || "").trim();
+      const type = normalizeFormat(result.getBarcodeFormat());
+
+      if (!text) return;
+      if (shouldIgnoreScan(text)) return;
+
+      openConfirmModal(text, type);
     }
 
     async function startScanner() {
@@ -336,25 +483,32 @@
       }
 
       try {
-        if (!window.Html5Qrcode) {
-          updateStatus("QR bibliotheek is nog niet geladen.");
-          return;
-        }
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.QR_CODE,
+          BarcodeFormat.EAN_13
+        ]);
 
-        html5QrCode = new Html5Qrcode(readerId);
+        scanner = new BrowserMultiFormatReader(hints);
+        readerEl.innerHTML = "";
 
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-          },
-          handleScanSuccess,
-          handleScanError
+        videoControls = await scanner.decodeFromVideoDevice(
+          undefined,
+          "reader",
+          (result, error) => {
+            if (result) {
+              handleResult(result);
+              return;
+            }
+
+            if (error && !(error instanceof NotFoundException)) {
+              console.error(error);
+            }
+          }
         );
 
         scannerRunning = true;
-        updateStatus("scanner is gestart. Richt de camera op een QR-code.");
+        updateStatus("scanner is gestart. Richt de camera op een QR of EAN-13 code.");
       } catch (error) {
         console.error(error);
         updateStatus("scanner kon niet gestart worden. Controleer camerarechten en HTTPS.");
@@ -362,16 +516,18 @@
     }
 
     async function stopScanner() {
-      if (!scannerRunning || !html5QrCode) {
-        updateStatus("scanner is al gestopt.");
-        return;
-      }
-
       try {
-        await html5QrCode.stop();
-        await html5QrCode.clear();
+        if (videoControls) {
+          videoControls.stop();
+          videoControls = null;
+        }
+
+        if (scanner) {
+          scanner = null;
+        }
+
+        readerEl.innerHTML = "";
         scannerRunning = false;
-        html5QrCode = null;
         updateStatus("scanner is gestopt.");
       } catch (error) {
         console.error(error);
@@ -381,8 +537,8 @@
 
     function clearList() {
       scannedArticles = [];
-      lastScanTime = 0;
-      lastScanValue = "";
+      lastConfirmedValue = "";
+      lastConfirmedTime = 0;
       renderList();
       updateStatus("lijst is leeggemaakt.");
     }
@@ -391,9 +547,8 @@
       const value = manualCodeEl.value.trim();
       if (!value) return;
 
-      addArticleToList(value);
+      openConfirmModal(value, "Handmatig");
       manualCodeEl.value = "";
-      manualCodeEl.focus();
     }
 
     function exportToCsv() {
@@ -402,8 +557,8 @@
         return;
       }
 
-      const header = ["Artikelnummer", "ScanTijd"];
-      const rows = scannedArticles.map(item => [item.code, item.scannedAt]);
+      const header = ["Artikelnummer", "Type", "ScanTijd"];
+      const rows = scannedArticles.map(item => [item.code, item.type, item.scannedAt]);
       const csvContent = [header, ...rows]
         .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
         .join("\n");
@@ -426,10 +581,18 @@
     document.getElementById("clearBtn").addEventListener("click", clearList);
     document.getElementById("addManualBtn").addEventListener("click", addManualArticle);
     document.getElementById("exportBtn").addEventListener("click", exportToCsv);
+    document.getElementById("confirmScanBtn").addEventListener("click", confirmPendingScan);
+    document.getElementById("rejectScanBtn").addEventListener("click", rejectPendingScan);
 
     manualCodeEl.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
         addManualArticle();
+      }
+    });
+
+    confirmModalEl.addEventListener("click", function(event) {
+      if (event.target === confirmModalEl) {
+        rejectPendingScan();
       }
     });
 
