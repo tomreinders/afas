@@ -261,7 +261,7 @@
     }
   </style>
 </head>
-<body onload="testfunction()">
+<body>
   <div class="page">
     <div class="panel panel-left">
       <h1>Nacalculatie weekoverzicht</h1>
@@ -269,7 +269,7 @@
       <div class="toolbar">
         <div class="field">
           <label for="token">Token</label>
-          <input id="token" type="password" value="PHRva2VuPjx2ZXJzaW9uPjE8L3ZlcnNpb24+PGRhdGE+QTk0QzFGOTlCRUZGNEM2RUI5MjgwNzMwNEQ5RTE2QzA0NDc0NzA4MzdDMUE0OTk0QjU2NjI0OTdDRUYzMDFDRTwvZGF0YT48L3Rva2VuPg==" placeholder="Plak hier je AFAS token" />
+          <input id="token" type="password" placeholder="Token wordt automatisch geladen" />
         </div>
 
         <div class="field">
@@ -426,9 +426,7 @@
 
     let selectedRowKey = null;
     let overviewRows = [];
-    function testfunction(){
-      console.log(window.location.href)
-    }
+
     function setStatus(element, message = '', type = 'info') {
       element.className = 'status';
       element.textContent = message;
@@ -1089,6 +1087,20 @@
       const weekInfo = getWeekInfo();
       document.getElementById('weeknummer').value = weekInfo.week;
       document.getElementById('boekjaar').value = weekInfo.year;
+
+      // Token uit querystring halen
+      const params = new URLSearchParams(window.location.search);
+      const rawToken = params.get('token');
+
+      if (rawToken) {
+        const xmlToken = `<token><version>1</version><data>${rawToken}</data></token>`;
+
+        // base64 encode (UTF-8 safe)
+        const base64Token = btoa(unescape(encodeURIComponent(xmlToken)));
+
+        document.getElementById('token').value = base64Token;
+      }
+
       clearDetails();
     })();
   </script>
