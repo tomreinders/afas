@@ -261,7 +261,7 @@
     }
   </style>
 </head>
-<body>
+<body onload="testfunction()">
   <div class="page">
     <div class="panel panel-left">
       <h1>Nacalculatie weekoverzicht</h1>
@@ -426,7 +426,9 @@
 
     let selectedRowKey = null;
     let overviewRows = [];
-
+    function testfunction(){
+      console.log(window.location.href)
+    }
     function setStatus(element, message = '', type = 'info') {
       element.className = 'status';
       element.textContent = message;
