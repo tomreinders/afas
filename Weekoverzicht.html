@@ -313,7 +313,7 @@
         <table id="overviewTable">
           <thead>
             <tr>
-              <th>Weeknummer</th>
+              <th>Weeknr</th>
               <th>Boekjaar</th>
               <th>Naam</th>
               <th>Aantal</th>
@@ -344,13 +344,13 @@
             <tr>
               <th>Bewerken</th>
               <th>Datum</th>
-              <th>Weeknummer</th>
+              <th>Weeknr</th>
               <th>Aantal</th>
               <th>Itemcode</th>
               <th>Project</th>
-              <th>Urensoort</th>
-              <th>Uurtype</th>
               <th>Omschrijving</th>
+              <th>Uurtype</th>
+              <th>Urensoort</th>
               <th>Naam klant</th>
             </tr>
           </thead>
@@ -386,13 +386,14 @@
             <tr>
               <th>Bewerken</th>
               <th>Datum</th>
-              <th>Weeknummer</th>
+              <th>Weeknr</th>
               <th>Aantal</th>
               <th>Itemcode</th>
               <th>Project</th>
               <th>Omschrijving</th>
+              <th>Uurtype</th>
               <th>Urensoort</th>
-              <th>Omschrijving 2</th>
+              <th>Naam klant</th>
             </tr>
           </thead>
           <tbody>
@@ -743,7 +744,7 @@
       if (!rows || rows.length === 0) {
         vergoedingTableBody.innerHTML = `
           <tr>
-            <td colspan="9" class="empty">Geen vergoedingen gevonden.</td>
+            <td colspan="10" class="empty">Geen vergoedingen gevonden.</td>
           </tr>
         `;
         return;
@@ -762,6 +763,8 @@
         }
 
         const omschrijving2Class = getOmschrijving2StyleClass(row.Omschrijving_2);
+        const naamKlant = row['Naam_2'] ?? '';
+
         tr.innerHTML = `
           <td>${isRowGereedgemeld(row) ? '' : `
             <a href="${escapeHtml(buildEditUrl(row))}" target="_blank" rel="noopener noreferrer" title="Bewerk regel" style="text-decoration:none;font-size:18px;">
@@ -773,10 +776,10 @@
           <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td>${escapeHtml(row.Itemcode ?? '')}</td>
           <td>${escapeHtml(row.Project ?? '')}</td>
-          <td>${escapeHtml(row.Urensoort ?? '')}</td>
-          <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
-          <td>${escapeHtml(row.Naam_2 ?? '')}</td>
+          <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
+          <td>${escapeHtml(row.Urensoort ?? '')}</td>
+          <td>${escapeHtml(row['Naam_2'] ?? '')}</td>
         `;
         vergoedingTableBody.appendChild(tr);
       });
@@ -788,7 +791,7 @@
       if (!rows || rows.length === 0) {
         detailTableBody.innerHTML = `
           <tr>
-            <td colspan="9" class="empty">Geen detailregels gevonden.</td>
+            <td colspan="10" class="empty">Geen detailregels gevonden.</td>
           </tr>
         `;
         return;
@@ -851,6 +854,7 @@
         }
 
         const omschrijving2Class = getOmschrijving2StyleClass(row.Omschrijving_2);
+        const naamKlant = row['Naam_2'] ?? '';
 
         tr.innerHTML = `
           <td>${isRowGereedgemeld(row) ? '' : `
@@ -864,8 +868,9 @@
           <td>${escapeHtml(row.Itemcode ?? '')}</td>
           <td>${escapeHtml(row.Project ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
-          <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
+          <td>${escapeHtml(row.Urensoort ?? '')}</td>
+          <td>${escapeHtml(naamKlant)}</td>
         `;
 
         detailTableBody.appendChild(tr);
