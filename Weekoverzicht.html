@@ -352,10 +352,10 @@
               <th>Bewerken</th>
               <th>Datum</th>
               <th>Weeknr</th>
-              <th>Aantal</th>
               <th>Itemcode</th>
               <th>Project</th>
               <th>Omschrijving</th>
+              <th>Aantal</th>
               <th>Uurtype</th>
               <th>Urensoort</th>
               <th>Naam klant</th>
@@ -394,10 +394,10 @@
               <th>Bewerken</th>
               <th>Datum</th>
               <th>Weeknr</th>
-              <th>Aantal</th>
               <th>Itemcode</th>
               <th>Project</th>
               <th>Omschrijving</th>
+              <th>Aantal</th>
               <th>Uurtype</th>
               <th>Urensoort</th>
               <th>Naam klant</th>
@@ -807,10 +807,10 @@
           `}</td>
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
-          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td>${escapeHtml(row.Itemcode ?? '')}</td>
           <td>${escapeHtml(row.Project ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td>${escapeHtml(row['Naam_2'] ?? '')}</td>
@@ -853,7 +853,7 @@
         const weekday = getWeekday(date);
 
         tr.innerHTML = `
-          <td colspan="3">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
+          <td colspan="6">Subtotaal ${escapeHtml(formatDate(date))} (${escapeHtml(weekday)})</td>
           <td>${escapeHtml(formatNumber(total))} uren</td>
           <td colspan="6"></td>
         `;
@@ -898,10 +898,10 @@
           `}</td>
           <td>${escapeHtml(formatDate(row.Datum ?? ''))}</td>
           <td>${escapeHtml(row.Weeknummer ?? '')}</td>
-          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td>${escapeHtml(row.Itemcode ?? '')}</td>
           <td>${escapeHtml(row.Project ?? '')}</td>
           <td>${escapeHtml(row.Omschrijving ?? '')}</td>
+          <td>${escapeHtml(formatNumber(row.Aantal ?? ''))}</td>
           <td class="${omschrijving2Class}">${escapeHtml(row.Omschrijving_2 ?? '')}</td>
           <td>${escapeHtml(row.Urensoort ?? '')}</td>
           <td>${escapeHtml(naamKlant)}</td>
