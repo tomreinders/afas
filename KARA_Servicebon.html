@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kara Servicebon</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --kara-red: #e4003a;
+      --border: #2d2d2d;
+      --light: #f3f3f3;
+      --text: #111;
+      --muted: #666;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #e9e9e9;
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+    }
+
+    .controls {
+      background: #fff;
+      border: 1px solid #d3d3d3;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .controls h1 {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      font: inherit;
+    }
+
+    input, textarea {
+      padding: 10px 12px;
+      border: 1px solid #bdbdbd;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    button {
+      width: auto;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    button.secondary {
+      background: #5a5a5a;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .paper-wrap {
+      display: block;
+    }
+
+    .paper {
+      width: 210mm;
+      min-height: auto;
+      background: #fff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      padding: 10mm 10mm 12mm;
+      margin: 0 auto;
+    }
+
+    .allow-page-break {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+
+    .repeat-header {
+      display: table-header-group;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .logo-box {
+      width: 48%;
+      min-height: 70px;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .logo-box img {
+      max-width: 100%;
+      max-height: 58px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .logo-fallback {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--kara-red);
+    }
+
+    .top-right {
+      width: 52%;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .meta-card {
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .meta-title {
+      background: var(--kara-red);
+      color: #fff;
+      font-weight: 700;
+      padding: 8px 10px;
+      font-size: 14px;
+      text-transform: uppercase;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .meta-table td {
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 7px 8px;
+      vertical-align: top;
+    }
+
+    .meta-table td:last-child {
+      border-right: 0;
+    }
+
+    .meta-label {
+      background: #fafafa;
+      width: 38%;
+      font-weight: 700;
+    }
+
+    .section {
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      page-break-inside: avoid;
+    }
+
+    .section.allow-page-break {
+      page-break-inside: auto;
+    }
+
+    .section-title {
+      background: var(--light);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 10px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .info-table td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 8px;
+      vertical-align: top;
+    }
+
+    .info-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .info-table td:last-child {
+      border-right: 0;
+    }
+
+    .label-cell {
+      width: 18%;
+      background: #fafafa;
+      font-weight: 700;
+    }
+
+    .text-block {
+      min-height: 72px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .split-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .time-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .time-table th, .time-table td {
+      border: 1px solid var(--border);
+      padding: 7px 8px;
+      text-align: left;
+      height: 28px;
+    }
+
+    .time-table th {
+      background: #fafafa;
+      font-weight: 700;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .bottom-row {
+      width: 100%;
+      margin-top: 8px;
+      page-break-inside: avoid;
+    }
+
+    .bottom-signature {
+      width: 280px;
+      margin-left: auto;
+    }
+
+    .signature-box {
+      border: 1px solid var(--border);
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      width: 100%;
+    }
+
+    .signature-head {
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .signature-body {
+      flex: 1;
+      padding: 10px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+
+    .signature-image {
+      max-width: 100%;
+      max-height: 100px;
+      object-fit: contain;
+      display: none;
+    }
+
+    .signature-placeholder {
+      font-size: 11px;
+      color: #777;
+      text-align: right;
+    }
+
+    .footer {
+      margin-top: 10px;
+      border-top: 1px solid #9a9a9a;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 11px;
+      color: #333;
+    }
+
+    @media print {
+      html, body {
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .app {
+        margin: 0;
+        padding: 0;
+        max-width: none;
+      }
+
+      .paper-wrap {
+        display: block;
+      }
+
+      .paper {
+        box-shadow: none;
+        width: 210mm;
+        min-height: auto;
+        margin: 0 auto;
+      }
+
+      .meta-title,
+      .section-title,
+      .time-table th,
+      .signature-head {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+      .app { margin: 0; padding: 0; max-width: none; }
+      .paper-wrap { display: block; }
+      .paper { box-shadow: none; width: 210mm; min-height: auto; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="paper-wrap">
+      <div class="paper" id="servicebon">
+        <div class="topbar">
+          <div class="logo-box">
+            <img id="karaLogo" src="lo_KARA_cmyk.png" alt="Kara logo" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';" />
+            <div id="logoFallback" class="logo-fallback" style="display:none;">KARA</div>
+          </div>
+          <div class="top-right">
+            <div class="meta-card">
+              <div class="meta-title">Service bon</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Algemeen</div>
+          <table class="info-table">
+            <tr>
+              <td class="label-cell">Projectnummer</td>
+              <td id="projectId">-</td>
+              <td class="label-cell">Projectgroep</td>
+              <td id="projectGroup">-</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Omschrijving</td>
+              <td id="description">-</td>
+              <td class="label-cell">Facturabel</td>
+              <td id="chargeable">-</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Startdatum</td>
+              <td id="dateStart">-</td>
+              <td class="label-cell">Status</td>
+              <td id="statusText">-</td>
+            </tr>
+            
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Bezoekadres</div>
+          <table class="info-table">
+            <tr>
+              <td class="label-cell">Naam</td>
+              <td id="naam">-</td>
+              <td class="label-cell">Naam 2</td>
+              <td id="naam2">-</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Contact</td>
+              <td id="naam4">-</td>
+              <td class="label-cell">Adres</td>
+              <td id="address">-</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="split-row">
+          <div class="section">
+            <div class="section-title">Omschrijving werkzaamheden</div>
+            <div class="text-block" id="descriptionBlock">-</div>
+          </div>
+          <div class="section">
+            <div class="section-title">Uitgevoerde werkzaamheden</div>
+            <div class="text-block" id="performedBlock">-</div>
+          </div>
+        </div>
+
+        <div class="section allow-page-break">
+          <div class="section-title">Tijdregistratie</div>
+          <table class="time-table">
+            <thead class="repeat-header">
+              <tr>
+                <th>Medewerker</th>
+                <th>Datum</th>
+                <th>Werksoort</th>
+                <th>Urensoort</th>
+                <th>Aantal</th>
+              </tr>
+            </thead>
+            <tbody id="timeTableBody">
+              <tr>
+                <td colspan="5">Geen tijdregels geladen</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section allow-page-break">
+          <div class="section-title">Gebruikte materialen</div>
+          <table class="time-table">
+            <thead class="repeat-header">
+              <tr>
+                <th>Artikelcode</th>
+                <th>Omschrijving</th>
+                <th>Aantal</th>
+              </tr>
+            </thead>
+            <tbody id="materialsTableBody">
+              <tr>
+                <td colspan="3">Geen materiaalregels geladen</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bottom-row">
+          <div class="bottom-signature">
+            <div class="signature-box">
+              <div class="signature-head">Handtekening klant</div>
+              <div class="signature-body">
+                <img id="signatureImage" class="signature-image" alt="Handtekening" />
+                <div id="signaturePlaceholder" class="signature-placeholder">Geen handtekening geladen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div>Kara Future Energy Systems</div>
+          <div id="footerProject">Project: -</div>
+          <div>Pagina 1 / 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function formatDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat('nl-NL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(date);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat('nl-NL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value ?? '-';
+    }
+
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        token: params.get('token') || '',
+        werkbon: params.get('werkbon') || ''
+      };
+    }
+
+    function renderBon(row) {
+      const address = `${row.Straat || ''} ${row.Huisnummer || ''}`.trim() || '-';
+      const startDate = formatDate(row.DateStart);
+
+      setText('projectId', row.ProjectId || '-');
+      setText('projectGroup', row.Projectgroep_omschrijving || row.ProjectGroup || '-');
+      setText('description', row.Description || '-');
+      setText('dateStart', startDate);
+            setText('chargeable', row.Chargeable ? 'Ja' : 'Nee');
+      setText('statusText', row.Status_beschrijving_Project || '-');
+      setText('naam', row.Naam || '-');
+      setText('naam2', row.Naam_2 || '-');
+      setText('naam4', row.Naam_4 || '-');
+      setText('address', address);
+      setText('descriptionBlock', row.Status_beschrijving_Project || '-');
+      setText('performedBlock', row.Opmerking || '-');
+      setText('footerProject', `Project: ${row.ProjectId || '-'}`);
+
+      const img = document.getElementById('signatureImage');
+      const placeholder = document.getElementById('signaturePlaceholder');
+
+      if (row.Afbeelding) {
+        img.src = `data:image/jpeg;base64,${row.Afbeelding}`;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+    }
+
+    function renderNacalculatie(rows = []) {
+      const timeBody = document.getElementById('timeTableBody');
+      const materialsBody = document.getElementById('materialsTableBody');
+
+      const werksoorten = rows.filter(row => (row.Type_item || '').toLowerCase() === 'werksoort');
+      const artikelen = rows.filter(row => (row.Type_item || '').toLowerCase() === 'artikel');
+
+      if (werksoorten.length) {
+        timeBody.innerHTML = werksoorten.map(row => `
+          <tr>
+            <td>${row.Naam || row.Naam_2 || row.Medewerker || '-'}</td>
+            <td>${formatDate(row.Datum)}</td>
+            <td>${row.Omschrijving_3 || row.Itemcode || '-'}</td>
+            <td>${row.Omschrijving_2 || '-'}</td>
+            <td>${row.Aantal ?? '-'}</td>
+          </tr>
+        `).join('');
+      } else {
+        timeBody.innerHTML = '<tr><td colspan="5">Geen werksoorten gevonden</td></tr>';
+      }
+
+      if (artikelen.length) {
+        materialsBody.innerHTML = artikelen.map(row => `
+          <tr>
+            <td>${row.Itemcode || '-'}</td>
+            <td>${row.Omschrijving_3 || row.Omschrijving || '-'}</td>
+            <td>${row.Aantal ?? '-'}</td>
+          </tr>
+        `).join('');
+      } else {
+        materialsBody.innerHTML = '<tr><td colspan="3">Geen artikelen gevonden</td></tr>';
+      }
+    }
+
+    function buildAfasToken(rawToken) {
+      const xmlToken = `<token><version>1</version><data>${rawToken}</data></token>`;
+      return 'AfasToken ' + btoa(xmlToken);
+    }
+
+    async function loadProjectFromQuery() {
+      const { token, werkbon } = getQueryParams();
+
+      if (!token || !werkbon) {
+        document.body.innerHTML = '<div style="padding:40px;font-family:Arial,Helvetica,sans-serif;">Verplichte query parameters ontbreken. Gebruik bijvoorbeeld <br><br><code>?token=JOUW_TOKEN&werkbon=9260181</code></div>';
+        return;
+      }
+
+      const environment = '87488';
+      const projectUrl = `https://${environment}.rest.afas.online/ProfitRestServices/connectors/Profit_Projects_SERVICE?filterfieldids=ProjectId&filtervalues=${encodeURIComponent(werkbon)}&operatortypes=1&skip=0&take=20&orderbyfieldids=ProjectId`;
+      const nacalculatieUrl = `https://${environment}.rest.afas.online/ProfitRestServices/connectors/Insite_nacalculatieregels?filterfieldids=Project&filtervalues=${encodeURIComponent(werkbon)}&operatortypes=1&skip=0&take=200&orderbyfieldids=Regelnummer`;
+
+      try {
+        const headers = {
+          'Authorization': buildAfasToken(token),
+          'Accept': 'application/json'
+        };
+
+        const [projectResponse, nacalculatieResponse] = await Promise.all([
+          fetch(projectUrl, { method: 'GET', headers }),
+          fetch(nacalculatieUrl, { method: 'GET', headers })
+        ]);
+
+        if (!projectResponse.ok) {
+          throw new Error(`Project request mislukt met status ${projectResponse.status}`);
+        }
+
+        if (!nacalculatieResponse.ok) {
+          throw new Error(`Nacalculatie request mislukt met status ${nacalculatieResponse.status}`);
+        }
+
+        const projectData = await projectResponse.json();
+        const nacalculatieData = await nacalculatieResponse.json();
+        const row = projectData?.rows?.[0];
+
+        if (!row) {
+          throw new Error('Geen projectgegevens gevonden.');
+        }
+
+        renderBon(row);
+        renderNacalculatie(nacalculatieData?.rows || []);
+
+        setTimeout(async () => {
+          const element = document.getElementById('servicebon');
+          await html2pdf().set({
+            margin: 0,
+            filename: `servicebon-${werkbon}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+          }).from(element).save();
+        }, 400);
+      } catch (error) {
+        console.error(error);
+        document.body.innerHTML = `<div style="padding:40px;font-family:Arial,Helvetica,sans-serif;">Er ging iets mis bij het ophalen van AFAS data.<br><br>${error.message}</div>`;
+      }
+    }
+
+    loadProjectFromQuery();
+  </script>
+</body>
+</html>
