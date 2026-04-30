@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFAS QR Artikel Scanner</title>
+
+  <!-- QR scanner library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --warning-bg: #fff7ed;
+      --warning-border: #fed7aa;
+      --warning-text: #9a3412;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    .manual-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    button.secondary {
+      background: #111827;
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.success {
+      background: var(--success);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1e40af;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .warning {
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid var(--warning-border);
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border-radius: 12px;
+      line-height: 1.4;
+    }
+
+    .article-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .image-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
+      overflow: hidden;
+    }
+
+    .image-box img {
+      max-width: 100%;
+      max-height: 260px;
+      display: block;
+    }
+
+    .placeholder {
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .article-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .article-code {
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .fact-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .fact-value {
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .stock-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stock-actions input {
+      width: 110px;
+    }
+
+    .purchase-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 9px 8px;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 850px) {
+      .grid,
+      .article-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>AFAS QR Artikel Scanner</h1>
+    <div class="subtitle">Scan een artikelnummer, bijvoorbeeld 5611000311, en haal direct de artikelgegevens op.</div>
+
+    <div class="warning">
+      Let op: een AFAS-token in frontend HTML is zichtbaar voor gebruikers. Voor productie is een kleine backend/proxy veiliger. Deze demo gebruikt de token uit de URL, bijvoorbeeld: <strong>?token=XXAAXX</strong>.
+    </div>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Scanner</h2>
+        <div id="reader"></div>
+
+        <div class="manual-row">
+          <input id="manualCode" type="text" inputmode="numeric" placeholder="Artikelnummer handmatig invoeren" />
+          <button id="manualSearchBtn" type="button">Zoek</button>
+        </div>
+
+        <div class="manual-row">
+          <button id="startScannerBtn" type="button" class="secondary">Scanner starten</button>
+          <button id="stopScannerBtn" type="button" class="secondary">Scanner stoppen</button>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <div id="emptyState" class="placeholder">Scan of vul een artikelnummer in om de gegevens te laden.</div>
+
+        <div id="articleView" class="hidden">
+          <div class="article-layout">
+            <div class="image-box" id="imageBox">
+              <div class="placeholder">Geen afbeelding geladen</div>
+            </div>
+
+            <div>
+              <div class="article-title" id="articleDescription">-</div>
+              <div class="article-code" id="articleCode">-</div>
+
+              <div class="facts">
+                <div class="fact">
+                  <div class="fact-label">Extra omschrijving</div>
+                  <div class="fact-value" id="articleExtraDescription">-</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">Eenheid</div>
+                  <div class="fact-value" id="articleUnit">-</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">Locatie</div>
+                  <div class="fact-value" id="articleLocation">-</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">Groep</div>
+                  <div class="fact-value" id="articleGroup">-</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">Barcode</div>
+                  <div class="fact-value" id="articleBarcode">-</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">Laatst gewijzigd</div>
+                  <div class="fact-value" id="articleModified">-</div>
+                </div>
+              </div>
+
+              <div class="stock-actions">
+                <input id="stockQty" type="number" min="1" step="1" value="1" />
+                <button id="stockOutBtn" type="button" class="danger">Voorraad afboeken</button>
+                <button id="stockInBtn" type="button" class="success">Voorraad opboeken</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="purchase-header">
+            <h3>Laatste inkooporderregels</h3>
+            <button id="loadPurchaseLinesBtn" type="button">Toon laatste 20</button>
+          </div>
+
+          <div id="purchaseLinesContainer" class="hidden">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Aantal</th>
+                  <th>Geleverd</th>
+                  <th>Open</th>
+                  <th>Eenheid</th>
+                  <th>Leverancier art.nr.</th>
+                  <th>Magazijn</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseLinesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const AFAS_BASE_URL = "https://87488.rest.afas.online/ProfitRestServices/connectors";
+    const ITEM_CONNECTOR = "Actemium_Items";
+    const IMAGE_CONNECTOR = "Actemium_Item_Afbeelding";
+    const PURCHASE_LINES_CONNECTOR = "Actemium_Inkooporderregels";
+
+    let html5QrCode = null;
+    let currentItemCode = null;
+    let isScanning = false;
+
+    const elements = {
+      status: document.getElementById("status"),
+      manualCode: document.getElementById("manualCode"),
+      manualSearchBtn: document.getElementById("manualSearchBtn"),
+      startScannerBtn: document.getElementById("startScannerBtn"),
+      stopScannerBtn: document.getElementById("stopScannerBtn"),
+      emptyState: document.getElementById("emptyState"),
+      articleView: document.getElementById("articleView"),
+      imageBox: document.getElementById("imageBox"),
+      articleDescription: document.getElementById("articleDescription"),
+      articleCode: document.getElementById("articleCode"),
+      articleExtraDescription: document.getElementById("articleExtraDescription"),
+      articleUnit: document.getElementById("articleUnit"),
+      articleLocation: document.getElementById("articleLocation"),
+      articleGroup: document.getElementById("articleGroup"),
+      articleBarcode: document.getElementById("articleBarcode"),
+      articleModified: document.getElementById("articleModified"),
+      stockQty: document.getElementById("stockQty"),
+      stockOutBtn: document.getElementById("stockOutBtn"),
+      stockInBtn: document.getElementById("stockInBtn"),
+      loadPurchaseLinesBtn: document.getElementById("loadPurchaseLinesBtn"),
+      purchaseLinesContainer: document.getElementById("purchaseLinesContainer"),
+      purchaseLinesBody: document.getElementById("purchaseLinesBody")
+    };
+
+    function getQueryParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function getAfasTokenHeaderValue() {
+      const token = getQueryParam("token");
+
+      if (!token) {
+        throw new Error("Geen token gevonden. Open de pagina met ?token=JOUW_TOKEN");
+      }
+
+      return `<token><version>1</version><data>${token}</data></token>`;
+    }
+
+    function showStatus(message, isError = false) {
+      elements.status.textContent = message;
+      elements.status.classList.toggle("error", isError);
+      elements.status.style.display = "block";
+    }
+
+    function clearStatus() {
+      elements.status.textContent = "";
+      elements.status.style.display = "none";
+      elements.status.classList.remove("error");
+    }
+
+    function buildConnectorUrl(connectorName, params) {
+      const url = new URL(`${AFAS_BASE_URL}/${connectorName}`);
+
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+
+      return url.toString();
+    }
+
+    async function afasGet(url) {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": getAfasTokenHeaderValue(),
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`AFAS fout ${response.status}: ${text}`);
+      }
+
+      return response.json();
+    }
+
+    function sanitizeScannedCode(rawCode) {
+      return String(rawCode || "")
+        .trim()
+        .replace(/[^0-9A-Za-z\-_]/g, "");
+    }
+
+    async function loadItemByCode(rawCode) {
+      const itemCode = sanitizeScannedCode(rawCode);
+
+      if (!itemCode) {
+        showStatus("Geen geldig artikelnummer gevonden.", true);
+        return;
+      }
+
+      currentItemCode = itemCode;
+      elements.manualCode.value = itemCode;
+      elements.purchaseLinesContainer.classList.add("hidden");
+      elements.purchaseLinesBody.innerHTML = "";
+
+      showStatus(`Artikel ${itemCode} wordt geladen...`);
+
+      try {
+        const itemUrl = buildConnectorUrl(ITEM_CONNECTOR, {
+          filterfieldids: "ItCd",
+          filtervalues: itemCode,
+          operatortypes: "1",
+          skip: "0",
+          take: "20"
+        });
+
+        const itemData = await afasGet(itemUrl);
+        const item = itemData.rows?.[0];
+
+        if (!item) {
+          elements.emptyState.classList.remove("hidden");
+          elements.articleView.classList.add("hidden");
+          showStatus(`Geen artikel gevonden voor ${itemCode}.`, true);
+          return;
+        }
+
+        renderItem(item);
+        await loadItemImage(itemCode);
+        showStatus(`Artikel ${itemCode} geladen.`);
+      } catch (error) {
+        console.error(error);
+        showStatus(error.message, true);
+      }
+    }
+
+    function renderItem(item) {
+      elements.emptyState.classList.add("hidden");
+      elements.articleView.classList.remove("hidden");
+
+      elements.articleDescription.textContent = item.Ds || "Geen omschrijving";
+      elements.articleCode.textContent = `Artikelnummer: ${item.ItCd || "-"}`;
+      elements.articleExtraDescription.textContent = item.DsEx || "-";
+      elements.articleUnit.textContent = item.BiUn || "-";
+      elements.articleLocation.textContent = item.Loc || "-";
+      elements.articleGroup.textContent = item.Grp || "-";
+      elements.articleBarcode.textContent = item.BaCo || item.LBaCo || "-";
+      elements.articleModified.textContent = formatDate(item.MdDa);
+    }
+
+    async function loadItemImage(itemCode) {
+      elements.imageBox.innerHTML = `<div class="placeholder">Afbeelding wordt geladen...</div>`;
+
+      try {
+        const imageUrl = buildConnectorUrl(IMAGE_CONNECTOR, {
+          filterfieldids: "ItCd",
+          filtervalues: itemCode,
+          operatortypes: "1",
+          skip: "0",
+          take: "1"
+        });
+
+        const imageData = await afasGet(imageUrl);
+        const imageBase64 = imageData.rows?.[0]?.Thb;
+
+        if (!imageBase64) {
+          elements.imageBox.innerHTML = `<div class="placeholder">Geen afbeelding beschikbaar</div>`;
+          return;
+        }
+
+        elements.imageBox.innerHTML = `<img src="data:image/jpeg;base64,${imageBase64}" alt="Afbeelding artikel ${itemCode}">`;
+      } catch (error) {
+        console.error(error);
+        elements.imageBox.innerHTML = `<div class="placeholder">Afbeelding kon niet worden geladen</div>`;
+      }
+    }
+
+    async function loadPurchaseLines() {
+      if (!currentItemCode) {
+        showStatus("Scan eerst een artikel.", true);
+        return;
+      }
+
+      showStatus(`Inkooporderregels voor ${currentItemCode} worden geladen...`);
+
+      try {
+        const purchaseUrl = buildConnectorUrl(PURCHASE_LINES_CONNECTOR, {
+          filterfieldids: "PulItCd",
+          filtervalues: currentItemCode,
+          operatortypes: "1",
+          skip: "0",
+          take: "20",
+          orderbyfieldids: "-PulOrNu"
+        });
+
+        const purchaseData = await afasGet(purchaseUrl);
+        renderPurchaseLines(purchaseData.rows || []);
+        showStatus(`${purchaseData.rows?.length || 0} inkooporderregels geladen.`);
+      } catch (error) {
+        console.error(error);
+        showStatus(error.message, true);
+      }
+    }
+
+    function renderPurchaseLines(rows) {
+      elements.purchaseLinesBody.innerHTML = "";
+      elements.purchaseLinesContainer.classList.remove("hidden");
+
+      if (!rows.length) {
+        elements.purchaseLinesBody.innerHTML = `<tr><td colspan="7">Geen inkooporderregels gevonden.</td></tr>`;
+        return;
+      }
+
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(row.PulOrNu)}</td>
+          <td>${escapeHtml(row.PulQu)}</td>
+          <td>${escapeHtml(row.QuDd)}</td>
+          <td>${escapeHtml(row.QuDu)}</td>
+          <td>${escapeHtml(row.PulBiUn)}</td>
+          <td>${escapeHtml(row.IcsItSp)}</td>
+          <td>${escapeHtml(row.PulWar)}</td>
+        `;
+        elements.purchaseLinesBody.appendChild(tr);
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+
+      return new Intl.DateTimeFormat("nl-NL", {
+        dateStyle: "short",
+        timeStyle: "short"
+      }).format(date);
+    }
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "-";
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function startScanner() {
+      if (isScanning) return;
+
+      clearStatus();
+      html5QrCode = html5QrCode || new Html5Qrcode("reader");
+
+      try {
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          async decodedText => {
+            if (!decodedText) return;
+
+            await stopScanner();
+            await loadItemByCode(decodedText);
+          }
+        );
+
+        isScanning = true;
+        showStatus("Scanner actief. Richt de camera op een QR-code.");
+      } catch (error) {
+        console.error(error);
+        showStatus(`Scanner kon niet starten: ${error.message}`, true);
+      }
+    }
+
+    async function stopScanner() {
+      if (!html5QrCode || !isScanning) return;
+
+      try {
+        await html5QrCode.stop();
+        await html5QrCode.clear();
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        isScanning = false;
+      }
+    }
+
+    elements.manualSearchBtn.addEventListener("click", () => {
+      loadItemByCode(elements.manualCode.value);
+    });
+
+    elements.manualCode.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        loadItemByCode(elements.manualCode.value);
+      }
+    });
+
+    elements.startScannerBtn.addEventListener("click", startScanner);
+    elements.stopScannerBtn.addEventListener("click", stopScanner);
+    elements.loadPurchaseLinesBtn.addEventListener("click", loadPurchaseLines);
+
+    elements.stockOutBtn.addEventListener("click", () => {
+      alert(`Voorraad afboeken wordt later gekoppeld. Artikel: ${currentItemCode}, aantal: ${elements.stockQty.value}`);
+    });
+
+    elements.stockInBtn.addEventListener("click", () => {
+      alert(`Voorraad opboeken wordt later gekoppeld. Artikel: ${currentItemCode}, aantal: ${elements.stockQty.value}`);
+    });
+
+    if (!getQueryParam("token")) {
+      showStatus("Open deze pagina met ?token=JOUW_AFAS_TOKEN in de URL.", true);
+    }
+  </script>
+</body>
+</html>
