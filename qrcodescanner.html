@@ -210,6 +210,29 @@
       word-break: break-word;
     }
 
+    .stock-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stock-section h3 {
+      margin: 0 0 10px;
+    }
+
+    .stock-total {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #f9fafb;
+      margin-bottom: 10px;
+    }
+
+    .stock-total-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
     .stock-actions {
       display: flex;
       gap: 10px;
@@ -331,6 +354,13 @@
                 </div>
               </div>
 
+              <div class="stock-section">
+                <h3>Voorraad</h3>
+                <div id="stockContainer">
+                  <div class="placeholder">Voorraad nog niet geladen</div>
+                </div>
+              </div>
+
               <div class="stock-actions">
                 <input id="stockQty" type="number" min="1" step="1" value="1" />
                 <button id="stockOutBtn" type="button" class="danger">Voorraad afboeken</button>
@@ -370,6 +400,7 @@
     const ITEM_CONNECTOR = "Actemium_Items";
     const IMAGE_CONNECTOR = "Actemium_Item_Afbeelding";
     const PURCHASE_LINES_CONNECTOR = "Actemium_Inkooporderregels";
+    const STOCK_CONNECTOR = "Profit_Stock";
 
     let html5QrCode = null;
     let currentItemCode = null;
@@ -392,6 +423,7 @@
       articleGroup: document.getElementById("articleGroup"),
       articleBarcode: document.getElementById("articleBarcode"),
       articleModified: document.getElementById("articleModified"),
+      stockContainer: document.getElementById("stockContainer"),
       stockQty: document.getElementById("stockQty"),
       stockOutBtn: document.getElementById("stockOutBtn"),
       stockInBtn: document.getElementById("stockInBtn"),
@@ -474,6 +506,7 @@
       elements.manualCode.value = itemCode;
       elements.purchaseLinesContainer.classList.add("hidden");
       elements.purchaseLinesBody.innerHTML = "";
+      elements.stockContainer.innerHTML = `<div class="placeholder">Voorraad wordt geladen...</div>`;
 
       showStatus(`Artikel ${itemCode} wordt geladen...`);
 
@@ -497,7 +530,10 @@
         }
 
         renderItem(item);
-        await loadItemImage(itemCode);
+        await Promise.all([
+          loadItemImage(itemCode),
+          loadStock(itemCode)
+        ]);
         showStatus(`Artikel ${itemCode} geladen.`);
       } catch (error) {
         console.error(error);
@@ -544,6 +580,61 @@
         console.error(error);
         elements.imageBox.innerHTML = `<div class="placeholder">Afbeelding kon niet worden geladen</div>`;
       }
+    }
+
+    async function loadStock(itemCode) {
+      try {
+        const stockUrl = buildConnectorUrl(STOCK_CONNECTOR, {
+          filterfieldids: "ItemCodeId",
+          filtervalues: itemCode,
+          operatortypes: "1",
+          skip: "0",
+          take: "20",
+          orderbyfieldids: "WareHouse"
+        });
+
+        const stockData = await afasGet(stockUrl);
+        renderStock(stockData.rows || []);
+      } catch (error) {
+        console.error(error);
+        elements.stockContainer.innerHTML = `<div class="placeholder">Voorraad kon niet worden geladen</div>`;
+      }
+    }
+
+    function renderStock(rows) {
+      if (!rows.length) {
+        elements.stockContainer.innerHTML = `<div class="placeholder">Geen voorraad gevonden</div>`;
+        return;
+      }
+
+      const totalStock = rows.reduce((sum, row) => sum + Number(row.StockActual || 0), 0);
+
+      elements.stockContainer.innerHTML = `
+        <div class="stock-total">
+          <div class="fact-label">Totale actuele voorraad</div>
+          <div class="stock-total-value">${escapeHtml(totalStock)}</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Magazijn</th>
+              <th>Locatie</th>
+              <th>Actuele voorraad</th>
+              <th>Eenheid</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>${escapeHtml(row.WareHouse)}</td>
+                <td>${escapeHtml(row.Location)}</td>
+                <td>${escapeHtml(row.StockActual)}</td>
+                <td>${escapeHtml(row.UnitId)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
     }
 
     async function loadPurchaseLines() {
