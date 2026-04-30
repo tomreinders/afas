@@ -292,9 +292,6 @@
     <h1>AFAS QR Artikel Scanner</h1>
     <div class="subtitle">Scan een artikelnummer, bijvoorbeeld 5611000311, en haal direct de artikelgegevens op.</div>
 
-    <div class="warning">
-      Let op: een AFAS-token in frontend HTML is zichtbaar voor gebruikers. Voor productie is een kleine backend/proxy veiliger. Deze demo gebruikt de token uit de URL, maakt daar een XML-token van, zet deze om naar Base64 en stuurt hem mee als <strong>Authorization: AfasToken ...</strong>.
-    </div>
 
     <section class="grid">
       <div class="card">
@@ -717,10 +714,26 @@
 
       try {
         await html5QrCode.start(
-          { facingMode: "environment" },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
+            facingMode: "environment",
+            focusMode: "continuous"
+          },
+          {
+            fps: 20,
+            qrbox: { width: 300, height: 300 },
+            aspectRatio: 1.0,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            },
+            videoConstraints: {
+              facingMode: "environment",
+              focusMode: "continuous",
+              advanced: [
+                { focusMode: "continuous" },
+                { exposureMode: "continuous" },
+                { whiteBalanceMode: "continuous" }
+              ]
+            }
           },
           async decodedText => {
             if (!decodedText) return;
@@ -776,6 +789,10 @@
     if (!getQueryParam("token")) {
       showStatus("Open deze pagina met ?token=JOUW_AFAS_TOKEN in de URL.", true);
     }
+
+    window.addEventListener("load", () => {
+      startScanner();
+    });
   </script>
 </body>
 </html>
