@@ -270,7 +270,7 @@
     <div class="subtitle">Scan een artikelnummer, bijvoorbeeld 5611000311, en haal direct de artikelgegevens op.</div>
 
     <div class="warning">
-      Let op: een AFAS-token in frontend HTML is zichtbaar voor gebruikers. Voor productie is een kleine backend/proxy veiliger. Deze demo gebruikt de token uit de URL, bijvoorbeeld: <strong>?token=XXAAXX</strong>.
+      Let op: een AFAS-token in frontend HTML is zichtbaar voor gebruikers. Voor productie is een kleine backend/proxy veiliger. Deze demo gebruikt de token uit de URL, maakt daar een XML-token van, zet deze om naar Base64 en stuurt hem mee als <strong>Authorization: AfasToken ...</strong>.
     </div>
 
     <section class="grid">
@@ -411,7 +411,10 @@
         throw new Error("Geen token gevonden. Open de pagina met ?token=JOUW_TOKEN");
       }
 
-      return `<token><version>1</version><data>${token}</data></token>`;
+      const xmlToken = `<token><version>1</version><data>${token}</data></token>`;
+      const base64Token = btoa(xmlToken);
+
+      return `AfasToken ${base64Token}`;
     }
 
     function showStatus(message, isError = false) {
