@@ -153,18 +153,16 @@
     }
 
     .meta-card {
-      border: 1px solid var(--border);
       width: 100%;
       max-width: 340px;
     }
 
     .meta-title {
-      background: var(--kara-red);
-      color: #fff;
       font-weight: 700;
       padding: 8px 10px;
-      font-size: 14px;
+      font-size: 32px;
       text-transform: uppercase;
+      text-decoration: underline;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -337,6 +335,64 @@
       color: #333;
     }
 
+    .report-page {
+      width: 100%;
+      padding-top: 0;
+      margin-top: 0;
+      display: block;
+    }
+
+    .html2pdf__page-break {
+      height: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
+    }
+
+    .dossier-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .dossier-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--kara-red);
+    }
+
+    .attachment-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      align-content: start;
+    }
+
+    .attachment-card {
+      border: 1px solid var(--border);
+      padding: 8px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .attachment-card img {
+      width: 100%;
+      max-height: 105mm;
+      object-fit: contain;
+      display: block;
+    }
+
+    .attachment-name {
+      margin-top: 6px;
+      font-size: 10px;
+      color: #555;
+      word-break: break-word;
+    }
+
     @media print {
       html, body {
         background: #fff;
@@ -381,8 +437,19 @@
       <div class="paper" id="servicebon">
         <div class="topbar">
           <div class="logo-box">
-            <img id="karaLogo" src="lo_KARA_cmyk.png" alt="Kara logo" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';" />
-            <div id="logoFallback" class="logo-fallback" style="display:none;">KARA</div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="239.378" height="51.632" viewBox="0 0 239.378 51.632" aria-label="Kara logo">
+              <g transform="translate(-680 -1204.975)">
+                <g transform="translate(680 1204.975)">
+                  <path d="M185.555,20.974a5.4,5.4,0,0,0-4.58,2.536l-6.4,10.219h-.092V20.974h-15.61V53.737h15.61V43h.092L182.7,53.737h18.95l-13.029-15.83L202.43,20.974Z" transform="translate(-104.208 -13.757)" fill="#e00229"></path>
+                  <path d="M310.653,28.6h-.138l-3.44,11.976h7.111ZM297.53,20.981h22.31a5.4,5.4,0,0,1,5.143,3.746l9.347,29.014H317.214l-1.055-4.175H305.194l-1.24,4.175H287.068Z" transform="translate(-188.288 -13.761)" fill="#e00229"></path>
+                  <path d="M581.518,28.593h.136l3.534,11.974h-7.109Zm-12.985-7.619L558.071,53.737h16.884l1.24-4.177H587.16l1.057,4.177h17.115L595.984,24.72a5.4,5.4,0,0,0-5.143-3.746Z" transform="translate(-366.039 -13.757)" fill="#e00229"></path>
+                  <path d="M428.618,53.736H444.23V43.185h.093l7.753,10.551h19.591L460.293,42.374h0a10.952,10.952,0,0,0,.836-20.594,11.7,11.7,0,0,0-4.12-.8H428.618v9.07h23.246a1.815,1.815,0,1,1,0,3.63H428.618Z" transform="translate(-281.131 -13.758)" fill="#e00229"></path>
+                  <path d="M23.6,47.2A23.6,23.6,0,1,1,47.2,23.6,23.625,23.625,0,0,1,23.6,47.2m0-43.862A20.263,20.263,0,1,0,43.862,23.6,20.286,20.286,0,0,0,23.6,3.335" fill="#e00229"></path>
+                  <path d="M80.353,77.66l-.126-.2-.158.175c-1.116,1.233-2.288,2.412-3.292,3.409-.477.514-.931.959-1.372,1.389-2.175,2.126-3.612,3.53-1.314,7.854l.23.433.1-.479c.542-2.525,1.674-3.555,3.389-5.114.469-.427,1-.91,1.563-1.468,1.965-1.953,2.284-3.915.977-6" transform="translate(-47.83 -50.806)" fill="#e00229"></path>
+                  <path d="M45.608,47.679a7.069,7.069,0,0,1-.682-4.189c.472-1.89,2.2-3.746,4.586-6.162q.32-.323.65-.652a22.156,22.156,0,0,0,4.632-5.822,6.946,6.946,0,0,0-1.617-8.278l-.309-.222.026.379a12.791,12.791,0,0,1-1.218,6.127,25.412,25.412,0,0,1-4.786,5.875c-2.3,2.323-4.889,4.945-5.6,8.118a20.823,20.823,0,0,1-2.329-3.274c-2.255-5.156,1.212-9.845,4.571-14.386,1.031-1.392,2.005-2.706,2.816-4.04,1.4-2.3.561-5.192-.893-7.037l-.316-.4,0,.51c-.012,1.8-1.676,5-4.569,8.774-3.608,4.875-8.1,10.942-4.987,18.056l0,0c1.732,3.653,5.876,7.577,10.145,7.652l.257,0-.085-.243c-.093-.264-.193-.53-.293-.8" transform="translate(-22.653 -8.996)" fill="#e00229"></path>
+                </g>
+              </g>
+            </svg>
           </div>
           <div class="top-right">
             <div class="meta-card">
@@ -397,14 +464,14 @@
             <tr>
               <td class="label-cell">Projectnummer</td>
               <td id="projectId">-</td>
-              <td class="label-cell">Projectgroep</td>
+              <td class="label-cell">Type opdracht</td>
               <td id="projectGroup">-</td>
             </tr>
             <tr>
               <td class="label-cell">Omschrijving</td>
               <td id="description">-</td>
-              <td class="label-cell">Facturabel</td>
-              <td id="chargeable">-</td>
+              <td class="label-cell">Projectleider</td>
+              <td id="projectLeader">-</td>
             </tr>
             <tr>
               <td class="label-cell">Startdatum</td>
@@ -422,8 +489,8 @@
             <tr>
               <td class="label-cell">Naam</td>
               <td id="naam">-</td>
-              <td class="label-cell">Naam 2</td>
-              <td id="naam2">-</td>
+              <td class="label-cell">Postcode / Plaats</td>
+              <td id="postcodePlaats">-</td>
             </tr>
             <tr>
               <td class="label-cell">Contact</td>
@@ -498,8 +565,10 @@
         <div class="footer">
           <div>Kara Future Energy Systems</div>
           <div id="footerProject">Project: -</div>
-          <div>Pagina 1 / 1</div>
+          <div>Pagina 1</div>
         </div>
+
+        <div id="dossierPages"></div>
       </div>
     </div>
   </div>
@@ -530,7 +599,9 @@
     }
 
     function setText(id, value) {
-      document.getElementById(id).textContent = value ?? '-';
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.textContent = value ?? '-';
     }
 
     function getQueryParams() {
@@ -546,17 +617,17 @@
       const startDate = formatDate(row.DateStart);
 
       setText('projectId', row.ProjectId || '-');
-      setText('projectGroup', row.Projectgroep_omschrijving || row.ProjectGroup || '-');
+      setText('projectGroup', row.opdracht_soort || row.Opdracht_soort || row.Projectgroep_omschrijving || row.ProjectGroup || '-');
       setText('description', row.Description || '-');
       setText('dateStart', startDate);
-            setText('chargeable', row.Chargeable ? 'Ja' : 'Nee');
+            setText('projectLeader', row.Interne_projectleider || '-');
       setText('statusText', row.Status_beschrijving_Project || '-');
       setText('naam', row.Naam || '-');
-      setText('naam2', row.Naam_2 || '-');
+      setText('postcodePlaats', `${row.Postcode || ''} ${row.Woonplaats || ''}`.trim() || '-');
       setText('naam4', row.Naam_4 || '-');
       setText('address', address);
-      setText('descriptionBlock', row.Status_beschrijving_Project || '-');
-      setText('performedBlock', row.Opmerking || '-');
+      setText('descriptionBlock', row.Opmerking || '-');
+      setText('performedBlock', row.Opmerkingen || '-');
       setText('footerProject', `Project: ${row.ProjectId || '-'}`);
 
       const img = document.getElementById('signatureImage');
@@ -583,10 +654,10 @@
       if (werksoorten.length) {
         timeBody.innerHTML = werksoorten.map(row => `
           <tr>
-            <td>${row.Naam || row.Naam_2 || row.Medewerker || '-'}</td>
+            <td>${escapeHtml(row.Naam || row.Naam_2 || row.Medewerker || '-')}</td>
             <td>${formatDate(row.Datum)}</td>
-            <td>${row.Omschrijving_3 || row.Itemcode || '-'}</td>
-            <td>${row.Omschrijving_2 || '-'}</td>
+            <td>${escapeHtml(row.Omschrijving_3 || row.Itemcode || '-')}</td>
+            <td>${escapeHtml(row.Omschrijving_2 || '-')}</td>
             <td>${row.Aantal ?? '-'}</td>
           </tr>
         `).join('');
@@ -597,13 +668,129 @@
       if (artikelen.length) {
         materialsBody.innerHTML = artikelen.map(row => `
           <tr>
-            <td>${row.Itemcode || '-'}</td>
-            <td>${row.Omschrijving_3 || row.Omschrijving || '-'}</td>
+            <td>${escapeHtml(row.Itemcode || '-')}</td>
+            <td>${escapeHtml(row.Omschrijving_3 || row.Omschrijving || '-')}</td>
             <td>${row.Aantal ?? '-'}</td>
           </tr>
         `).join('');
       } else {
         materialsBody.innerHTML = '<tr><td colspan="3">Geen artikelen gevonden</td></tr>';
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function isImageFile(fileName = '') {
+      return /\.(jpg|jpeg|png|webp|gif)$/i.test(fileName);
+    }
+
+    function mimeTypeFromFileName(fileName = '') {
+      const lower = fileName.toLowerCase();
+      if (lower.endsWith('.png')) return 'image/png';
+      if (lower.endsWith('.webp')) return 'image/webp';
+      if (lower.endsWith('.gif')) return 'image/gif';
+      return 'image/jpeg';
+    }
+
+    function normalizeAttachmentBase64(data) {
+      if (!data) return '';
+      if (typeof data === 'string') return data;
+      return data.filedata || data.file_data || data.data || data.content || data.base64 || data.FileData || '';
+    }
+
+    async function fetchJson(url, headers) {
+      const response = await fetch(url, { method: 'GET', headers });
+      if (!response.ok) throw new Error(`Request mislukt met status ${response.status}: ${url}`);
+      return response.json();
+    }
+
+    async function fetchAttachmentBase64(environment, subjectId, fileId, headers) {
+      const url = `https://${environment}.rest.afas.online/ProfitRestServices/subjectconnector/${encodeURIComponent(subjectId)}/${encodeURIComponent(fileId)}`;
+      const data = await fetchJson(url, headers);
+      return normalizeAttachmentBase64(data);
+    }
+
+    async function renderDossierPages(environment, werkbon, headers) {
+      const container = document.getElementById('dossierPages');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const dossierUrl = `https://${environment}.rest.afas.online/ProfitRestServices/connectors/Dossieritems_Service?filterfieldids=Project&filtervalues=${encodeURIComponent(werkbon)}&operatortypes=1&skip=0&take=200&orderbyfieldids=Instuurdatum`;
+      const dossierData = await fetchJson(dossierUrl, headers);
+      const dossierItems = dossierData?.rows || [];
+
+      for (const item of dossierItems) {
+        const subjectId = item.Dossieritem;
+        if (!subjectId) continue;
+
+        const attachmentListUrl = `https://${environment}.rest.afas.online/ProfitRestServices/connectors/profit_subject_attachments?filterfieldids=subject_id&filtervalues=${encodeURIComponent(subjectId)}&operatortypes=1&skip=0&take=200&orderbyfieldids=attachment_id`;
+        const attachmentListData = await fetchJson(attachmentListUrl, headers);
+        const imageAttachments = (attachmentListData?.rows || []).filter(att => isImageFile(att.file_name));
+
+        if (!imageAttachments.length) continue;
+
+        const page = document.createElement('div');
+        page.className = 'report-page';
+        page.innerHTML = `
+          <div class="dossier-header">
+            <div>
+              <div class="dossier-title">${escapeHtml(item.Onderwerp || item.Omschrijving || 'Dossieritem')}</div>
+              <div class="small">Dossieritem: ${escapeHtml(subjectId)}</div>
+            </div>
+            <div class="small" style="text-align:right;">Project: ${escapeHtml(item.Project || werkbon)}</div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Dossieritem</div>
+            <table class="info-table">
+              <tr>
+                <td class="label-cell">Datum</td>
+                <td>${formatDateTime(item.Instuurdatum)}</td>
+                <td class="label-cell">Ingestuurd door</td>
+                <td>${escapeHtml(item.Omschrijving_2 || '-')}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">Omschrijving</td>
+                <td colspan="3">${escapeHtml(item.Omschrijving || '-')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="attachment-grid"></div>
+        `;
+
+        const grid = page.querySelector('.attachment-grid');
+
+        for (const attachment of imageAttachments) {
+          try {
+            const base64 = await fetchAttachmentBase64(environment, subjectId, attachment.file_id, headers);
+            if (!base64) continue;
+
+            const card = document.createElement('div');
+            card.className = 'attachment-card';
+            card.innerHTML = `
+              <img src="data:${mimeTypeFromFileName(attachment.file_name)};base64,${base64}" alt="${escapeHtml(attachment.file_name)}">
+              <div class="attachment-name">${escapeHtml(attachment.file_name)}</div>
+            `;
+            grid.appendChild(card);
+          } catch (error) {
+            console.warn('Bijlage kon niet worden geladen', attachment, error);
+          }
+        }
+
+        if (grid.children.length) {
+          const pageBreak = document.createElement('div');
+          pageBreak.className = 'html2pdf__page-break';
+          container.appendChild(pageBreak);
+          container.appendChild(page);
+        }
       }
     }
 
@@ -630,21 +817,10 @@
           'Accept': 'application/json'
         };
 
-        const [projectResponse, nacalculatieResponse] = await Promise.all([
-          fetch(projectUrl, { method: 'GET', headers }),
-          fetch(nacalculatieUrl, { method: 'GET', headers })
+        const [projectData, nacalculatieData] = await Promise.all([
+          fetchJson(projectUrl, headers),
+          fetchJson(nacalculatieUrl, headers)
         ]);
-
-        if (!projectResponse.ok) {
-          throw new Error(`Project request mislukt met status ${projectResponse.status}`);
-        }
-
-        if (!nacalculatieResponse.ok) {
-          throw new Error(`Nacalculatie request mislukt met status ${nacalculatieResponse.status}`);
-        }
-
-        const projectData = await projectResponse.json();
-        const nacalculatieData = await nacalculatieResponse.json();
         const row = projectData?.rows?.[0];
 
         if (!row) {
@@ -653,6 +829,7 @@
 
         renderBon(row);
         renderNacalculatie(nacalculatieData?.rows || []);
+        await renderDossierPages(environment, werkbon, headers);
 
         setTimeout(async () => {
           const element = document.getElementById('servicebon');
@@ -662,7 +839,7 @@
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
+            pagebreak: { mode: ['legacy'] }
           }).from(element).save();
         }, 400);
       } catch (error) {
