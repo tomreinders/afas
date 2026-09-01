@@ -2,76 +2,61 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>PrId bookmarklet (debug)</title>
+<title>PrId via referrer</title>
 <style>
   body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.6; }
   h1 { font-size: 1.3em; }
-  .bookmarklet { display: inline-block; background: #2563eb; color: white; padding: 12px 22px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05em; }
-  .bookmarklet:hover { background: #1d4ed8; }
-  ol { padding-left: 1.3em; }
-  .box { background: #f5f5f5; border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 0.8em; word-break: break-all; white-space: pre-wrap; }
-  .note { font-size: 0.9em; color: #555; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px 14px; }
+  .box { background: #f5f5f5; border-radius: 8px; padding: 14px 18px; word-break: break-all; font-family: monospace; font-size: 0.9em; margin: 10px 0; }
+  .prid { font-size: 1.4em; font-weight: bold; color: #b45309; background: #fef3c7; padding: 10px 14px; border-radius: 8px; display: inline-block; margin: 10px 0; }
+  .empty { color: #999; font-style: italic; }
+  .warn { font-size: 0.9em; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px 14px; }
 </style>
 </head>
 <body>
 
-<h1>Werkbon &rarr; Servicebon-tool bookmarklet (met debug-paneel)</h1>
+<h1>PrId via referrer</h1>
 
-<p>Sleep deze knop naar je bladwijzerbalk (vervangt je vorige bookmarklet):</p>
-<p><a class="bookmarklet" id="bmLink" href="#">📌 Open in Servicebon-tool (debug)</a></p>
+<h2>Referrer (ruwe waarde)</h2>
+<div class="box" id="referrer">-</div>
 
-<h2>Gebruik</h2>
-<ol>
-  <li>Open de werkbon-stamkaart in AFAS InSite.</li>
-  <li>Klik op de bookmarklet.</li>
-  <li>Rechtsboven op de pagina verschijnt een zwart paneel met de uitgelezen URL en de gevonden PrId, plus knoppen "Open in tool" en "Kopieer".</li>
-</ol>
+<h2>Gevonden PrId</h2>
+<div id="pridResult"></div>
 
-<div class="note">
-  <strong>Wat je uit de uitkomst kunt aflezen:</strong><br>
-  • Verschijnt er <em>helemaal geen paneel</em>? Dan wordt de bookmarklet zelf geblokkeerd (bv. door bedrijfsbeleid dat javascript:-bookmarklets uitschakelt) — niet een popup-probleem.<br>
-  • Verschijnt het paneel wél maar staat er "NIET GEVONDEN"? Dan bevat de huidige URL geen <code>prid=</code> op het moment van klikken.<br>
-  • Staat de PrId er wél, maar doet "Open in tool" niets? Check of je browser een popup-melding toont (adresbalk-icoontje) — dat is dan alsnog een popup-blocker, maar nu weet je zeker dat de rest werkte.
-</div>
-
-<h2>Wat de bookmarklet doet</h2>
-<div class="box" id="code"></div>
+<div class="warn" id="diagnosis"></div>
 
 <script>
-const targetBase = 'http://192.168.88.24:8080/maakservicebon';
+function extractPrId(str) {
+  if (!str) return null;
+  const match = str.match(/[?&#]prid=([^&#]+)/i);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
-const code =
-  'javascript:(function(){' +
-    'try{' +
-      'var href=window.location.href;' +
-      'var m=href.match(/[?&#]prid=([^&#]+)/i);' +
-      'var p=m?decodeURIComponent(m[1]):null;' +
-      'var old=document.getElementById("__pridDebugBox");' +
-      'if(old)old.remove();' +
-      'var box=document.createElement("div");' +
-      'box.id="__pridDebugBox";' +
-      'box.style.cssText="position:fixed;top:20px;right:20px;z-index:2147483647;background:#111;color:#0f0;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;max-width:420px;box-shadow:0 4px 20px rgba(0,0,0,.5)";' +
-      'box.innerHTML=' +
-        '"<div style=\\"color:#fff;font-weight:bold;margin-bottom:6px\\">PrId debug</div>" +' +
-        '"<div>URL: <span style=\\"color:#9cf\\">"+href+"</span></div>" +' +
-        '"<div style=\\"margin-top:4px\\">PrId: <span style=\\""+(p?"color:#7f7":"color:#f77")+"\\">"+(p||"NIET GEVONDEN")+"</span></div>" +' +
-        '(p?"<button id=\\"__pridOpenBtn\\" style=\\"margin-top:8px;padding:6px 10px;cursor:pointer\\">Open in tool</button><button id=\\"__pridCopyBtn\\" style=\\"margin-top:8px;margin-left:6px;padding:6px 10px;cursor:pointer\\">Kopieer</button>":"")+' +
-        '"<button id=\\"__pridCloseBtn\\" style=\\"margin-top:8px;margin-left:6px;padding:6px 10px;cursor:pointer\\">Sluiten</button>";' +
-      'document.body.appendChild(box);' +
-      'if(p){' +
-        'document.getElementById("__pridOpenBtn").onclick=function(){window.open("' + targetBase + '?prid="+encodeURIComponent(p),"_blank");};' +
-        'document.getElementById("__pridCopyBtn").onclick=function(){navigator.clipboard.writeText(p).then(function(){alert("Gekopieerd: "+p);});};' +
-      '}' +
-      'document.getElementById("__pridCloseBtn").onclick=function(){box.remove();};' +
-      'console.log("[PrId bookmarklet] URL:",href,"PrId:",p);' +
-    '}catch(e){' +
-      'alert("PrId bookmarklet fout: "+e.message);' +
-      'console.error("[PrId bookmarklet] Error:",e);' +
-    '}' +
-  '})()';
+const ref = document.referrer;
+document.getElementById('referrer').textContent = ref || '(leeg — geen referrer meegekregen)';
 
-document.getElementById('bmLink').setAttribute('href', code);
-document.getElementById('code').textContent = decodeURIComponent(code);
+const prid = extractPrId(ref);
+document.getElementById('pridResult').innerHTML = prid
+  ? '<div class="prid">' + prid + '</div>'
+  : '<span class="empty">Geen PrId gevonden</span>';
+
+let diagnosis;
+if (!ref) {
+  diagnosis = 'De referrer is helemaal leeg. Mogelijke oorzaken: de AFAS-knop opent deze pagina met rel="noreferrer"/"noopener", of de browser/organisatie blokkeert referrers standaard.';
+} else if (prid) {
+  diagnosis = 'Werkt: de PrId kwam gewoon mee in de referrer.';
+} else {
+  try {
+    const url = new URL(ref);
+    if (url.pathname === '/' || url.pathname === '') {
+      diagnosis = 'De referrer bevat alleen het domein (' + url.origin + '), geen pad of query string. Dit is de standaard "strict-origin-when-cross-origin" policy van de browser bij cross-origin navigatie — AFAS zou een soepelere Referrer-Policy moeten sturen om het pad/de PrId door te geven, en dat kunnen wij hier niet afdwingen.';
+    } else {
+      diagnosis = 'De referrer bevat wel een pad, maar geen herkenbare prid-parameter. Check de exacte opbouw hierboven.';
+    }
+  } catch (e) {
+    diagnosis = 'Kon de referrer niet parsen als URL.';
+  }
+}
+document.getElementById('diagnosis').textContent = diagnosis;
 </script>
 
 </body>
